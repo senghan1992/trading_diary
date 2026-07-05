@@ -68,3 +68,28 @@ Pages caching headers.
 - Matches the convention most Flutter projects on GitHub use (so the
   repo layout is recognizable to other contributors).
 - Avoids accidentally exposing private `lib/` files to the public web.
+
+## Verifying the live config
+
+After Pages is enabled (or any time you change the JSON), run the
+verification script from the repo root:
+
+```bash
+./scripts/verify_app_config.sh
+```
+
+It fetches the URL, parses the response, checks every required field,
+cross-references `latest_version` against `pubspec.yaml`, and prints a
+red-flagged exit code on any drift. Overridable:
+
+```bash
+APP_CONFIG_URL=https://staging.example.com/app-config.json \
+  PUBSPEC_PATH=/path/to/other/pubspec.yaml \
+  ./scripts/verify_app_config.sh
+```
+
+Requires `jq`. Install with `brew install jq` if missing.
+
+Run it from a CI job after every config edit; a non-zero exit means the
+in-app UpdateService will treat the config as null and silently skip the
+update check.
