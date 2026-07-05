@@ -1363,6 +1363,36 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'알림 연기'**
   String get snoozePickerTitle;
+
+  /// 인앱 업데이트 다이얼로그의 실행 버튼 라벨
+  ///
+  /// In ko, this message translates to:
+  /// **'업데이트'**
+  String get update;
+
+  /// 선택적(비강제) 업데이트 다이얼로그의 닫기 라벨
+  ///
+  /// In ko, this message translates to:
+  /// **'나중에'**
+  String get later;
+
+  /// 설치된 버전이 서버의 minimum_version보다 낮을 때 표시되는 강제 업데이트 다이얼로그 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'업데이트 필요'**
+  String get updateRequiredTitle;
+
+  /// 최신 버전이 있지만 필수가 아닐 때 표시되는 선택적 업데이트 다이얼로그 제목
+  ///
+  /// In ko, this message translates to:
+  /// **'업데이트 가능'**
+  String get updateAvailableTitle;
+
+  /// 서버 설정이 다국어 메시지를 제공하지 않을 때 사용되는 업데이트 다이얼로그 기본 본문
+  ///
+  /// In ko, this message translates to:
+  /// **'더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.'**
+  String get updateDefaultBody;
 }
 
 class _AppLocalizationsDelegate

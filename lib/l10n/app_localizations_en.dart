@@ -672,4 +672,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get snoozePickerTitle => 'Snooze reminder';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get later => 'Later';
+
+  @override
+  String get updateRequiredTitle => 'Update required';
+
+  @override
+  String get updateAvailableTitle => 'Update available';
+
+  @override
+  String get updateDefaultBody =>
+      'A new version is available. Please update for the best experience.';
 }

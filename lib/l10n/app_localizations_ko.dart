@@ -660,4 +660,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get snoozePickerTitle => '알림 연기';
+
+  @override
+  String get update => '업데이트';
+
+  @override
+  String get later => '나중에';
+
+  @override
+  String get updateRequiredTitle => '업데이트 필요';
+
+  @override
+  String get updateAvailableTitle => '업데이트 가능';
+
+  @override
+  String get updateDefaultBody => '더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.';
 }

@@ -246,5 +246,25 @@
   "snoozeOneWeek": "Snooze 1 week",
   "snoozeOneMonth": "Snooze 1 month",
   "snoozeThreeMonths": "Snooze 3 months",
-  "snoozePickerTitle": "Snooze reminder"
+  "snoozePickerTitle": "Snooze reminder",
+  "update": "Update",
+  "@update": {
+    "description": "Action label for the in-app update dialog button"
+  },
+  "later": "Later",
+  "@later": {
+    "description": "Dismiss label for the optional (non-forced) update dialog"
+  },
+  "updateRequiredTitle": "Update required",
+  "@updateRequiredTitle": {
+    "description": "Title of the forced-update dialog shown when the installed build is below the server's minimum_version"
+  },
+  "updateAvailableTitle": "Update available",
+  "@updateAvailableTitle": {
+    "description": "Title of the optional-update dialog shown when a newer version exists but is not required"
+  },
+  "updateDefaultBody": "A new version is available. Please update for the best experience.",
+  "@updateDefaultBody": {
+    "description": "Fallback body text for the update dialog when the server config doesn't supply a localized message"
+  }
 }

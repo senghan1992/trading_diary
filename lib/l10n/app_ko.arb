@@ -246,5 +246,25 @@
   "snoozeOneWeek": "1주 연기",
   "snoozeOneMonth": "1달 연기",
   "snoozeThreeMonths": "3달 연기",
-  "snoozePickerTitle": "알림 연기"
+  "snoozePickerTitle": "알림 연기",
+  "update": "업데이트",
+  "@update": {
+    "description": "인앱 업데이트 다이얼로그의 실행 버튼 라벨"
+  },
+  "later": "나중에",
+  "@later": {
+    "description": "선택적(비강제) 업데이트 다이얼로그의 닫기 라벨"
+  },
+  "updateRequiredTitle": "업데이트 필요",
+  "@updateRequiredTitle": {
+    "description": "설치된 버전이 서버의 minimum_version보다 낮을 때 표시되는 강제 업데이트 다이얼로그 제목"
+  },
+  "updateAvailableTitle": "업데이트 가능",
+  "@updateAvailableTitle": {
+    "description": "최신 버전이 있지만 필수가 아닐 때 표시되는 선택적 업데이트 다이얼로그 제목"
+  },
+  "updateDefaultBody": "더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.",
+  "@updateDefaultBody": {
+    "description": "서버 설정이 다국어 메시지를 제공하지 않을 때 사용되는 업데이트 다이얼로그 기본 본문"
+  }
 }
