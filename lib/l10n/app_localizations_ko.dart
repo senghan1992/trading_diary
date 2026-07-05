@@ -675,4 +675,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get updateDefaultBody => '더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.';
+
+  @override
+  String get updateFetchError => '업데이트 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.';
+
+  @override
+  String get updateStoreOpenError => '스토어를 열 수 없습니다. 잠시 후 다시 시도해주세요.';
 }

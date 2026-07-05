@@ -266,5 +266,13 @@
   "updateDefaultBody": "A new version is available. Please update for the best experience.",
   "@updateDefaultBody": {
     "description": "Fallback body text for the update dialog when the server config doesn't supply a localized message"
+  },
+  "updateFetchError": "Couldn't load update info. Please try again.",
+  "@updateFetchError": {
+    "description": "Error message on the force-update screen when the config fetch fails"
+  },
+  "updateStoreOpenError": "Couldn't open the store. Please try again.",
+  "@updateStoreOpenError": {
+    "description": "Snackbar text on the force-update screen when launching the store URL fails"
   }
 }

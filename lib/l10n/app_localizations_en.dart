@@ -688,4 +688,12 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updateDefaultBody =>
       'A new version is available. Please update for the best experience.';
+
+  @override
+  String get updateFetchError =>
+      'Couldn\'t load update info. Please try again.';
+
+  @override
+  String get updateStoreOpenError =>
+      'Couldn\'t open the store. Please try again.';
 }

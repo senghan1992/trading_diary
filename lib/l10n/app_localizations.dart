@@ -1393,6 +1393,18 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.'**
   String get updateDefaultBody;
+
+  /// 설정 정보를 가져오지 못했을 때 강제 업데이트 화면에 표시되는 에러 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'업데이트 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'**
+  String get updateFetchError;
+
+  /// 스토어 URL 실행이 실패했을 때 강제 업데이트 화면 스낵바에 표시되는 메시지
+  ///
+  /// In ko, this message translates to:
+  /// **'스토어를 열 수 없습니다. 잠시 후 다시 시도해주세요.'**
+  String get updateStoreOpenError;
 }
 
 class _AppLocalizationsDelegate
