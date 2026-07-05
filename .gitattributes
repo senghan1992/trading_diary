@@ -1,0 +1,140 @@
+# Git attributes for the trading_diary repository.
+#
+# This file tells git which line endings and diff/merge strategies to use
+# for each path. The defaults below match the conventions every Flutter
+# project on GitHub eventually settles into:
+#
+#   * Source files are LF on disk, regardless of OS. CRLF only ever shows
+#     up in the user's working tree on Windows and is fixed on commit.
+#   * Generated / binary files are flagged so git doesn't try to diff or
+#     merge them and doesn't try to normalize their line endings.
+#   * Lock files (pubspec.lock, Podfile.lock, gradle-wrapper.properties)
+#     are tracked but treated as binary-ish for diffing so they don't
+#     generate noisy merge conflicts.
+
+# -----------------------------------------------------------------------------
+# Text vs binary defaults
+# -----------------------------------------------------------------------------
+
+# Let git auto-detect text/binary for files without an explicit rule.
+# Pair this with the explicit `text` rules below so files we know are
+# text always win regardless of content sniffing.
+* text=auto
+
+# -----------------------------------------------------------------------------
+# Source code: enforce LF, mark as text
+# -----------------------------------------------------------------------------
+
+# Dart / Flutter
+*.dart         text eol=lf
+
+# Kotlin (Android)
+*.kt           text eol=lf
+*.kts          text eol=lf
+
+# Swift / Objective-C (iOS, macOS)
+*.swift        text eol=lf
+*.m            text eol=lf
+*.mm           text eol=lf
+*.h            text eol=lf
+
+# C / C++ (Windows / Linux runners, native plugins)
+*.c            text eol=lf
+*.cpp          text eol=lf
+*.cc           text eol=lf
+*.hpp          text eol=lf
+
+# Build files
+*.gradle       text eol=lf
+*.gradle.kts   text eol=lf
+*.xml          text eol=lf
+*.plist        text eol=lf
+*.properties   text eol=lf
+
+# Web assets (web/ folder)
+*.html         text eol=lf
+*.css          text eol=lf
+*.js           text eol=lf
+*.mjs          text eol=lf
+
+# Config / docs
+*.yaml         text eol=lf
+*.yml          text eol=lf
+*.json         text eol=lf
+*.md           text eol=lf
+*.txt          text eol=lf
+
+# Shell scripts MUST be LF even on Windows — gradlew, fix scripts, etc.
+*.sh           text eol=lf
+gradlew        text eol=lf
+gradlew.bat    text eol=lf
+
+# Editor / IDE
+.gitignore     text eol=lf
+.gitattributes text eol=lf
+.editorconfig  text eol=lf
+
+# -----------------------------------------------------------------------------
+# Lock files: track but treat as merge-frozen
+# -----------------------------------------------------------------------------
+
+# `pubspec.lock`, `Podfile.lock`, `package-lock.json` etc. are auto-generated.
+# They should still be committed (so installs are reproducible), but
+# three-way merges usually produce noisy conflicts. Use `union` so all
+# sides' additions are preserved, and tell git not to attempt textual diffs.
+pubspec.lock   -diff merge=union
+Podfile.lock   -diff merge=union
+ios/Pods/*     -diff
+**/Pods/*      -diff
+
+# Gradle wrapper metadata is small enough to diff normally.
+gradle-wrapper.properties text eol=lf
+
+# -----------------------------------------------------------------------------
+# Binary / generated assets
+# -----------------------------------------------------------------------------
+
+*.png          binary
+*.jpg          binary
+*.jpeg         binary
+*.gif          binary
+*.webp         binary
+*.ico          binary
+*.icns         binary
+# SVG is XML — keep it diffable
+*.svg          text eol=lf
+*.ttf          binary
+*.otf          binary
+*.woff         binary
+*.woff2        binary
+*.jar          binary
+*.aar          binary
+*.so           binary
+*.dll          binary
+*.dylib        binary
+*.keystore     binary
+*.jks          binary
+*.p12          binary
+*.mobileprovision binary
+
+# Flutter / Dart build outputs (regenerated per machine; never diff these)
+.dart_tool/**          binary
+build/**               binary
+.flutter-plugins-dependencies binary
+*.flutter-plugins     binary
+.flutter-plugins      binary
+
+# Generated Xcode / Gradle noise
+ios/Flutter/Generated.xcconfig         export-subst
+**/*.xcuserstate                       binary
+**/*.xcuserdatad/**                    binary
+*.hmap                                 binary
+*.ipa                                  binary
+*.app                                  binary
+*.dSYM/**                              binary
+*.dSYM                                 binary
+
+# Crash logs / OS garbage
+*.log          text eol=lf
+*.tmp          binary
+*.bak          binary
