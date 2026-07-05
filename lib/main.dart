@@ -6,17 +6,20 @@ import 'theme/app_theme.dart';
 import 'services/ad_service.dart';
 import 'services/local_storage_service.dart';
 import 'services/notification_service.dart';
+import 'services/update_service.dart';
 import 'providers/market_provider.dart';
 import 'providers/trade_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/notification_provider.dart';
+import 'screens/force_update_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
 import 'screens/review_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/orientation_lock.dart';
 import 'utils/responsive.dart';
+import 'widgets/update_dialog.dart';
 
 /// Lightweight global router used by [NotificationService] when a delivered
 /// notification is tapped. The settings/build code wires the active shell
@@ -62,6 +65,107 @@ Future<void> main() async {
   runApp(TradingDiaryApp(tradeProvider: tradeProvider));
 }
 
+/// Resolves the install-version-vs-server-status before the user can reach
+/// any other UI. Three branches:
+///
+///   * loading - splash screen while the config fetch is in flight.
+///   * required - the server says we're below [UpdateConfig.minimumVersion]
+///     or has flagged a force update. Show [ForceUpdateScreen] which blocks
+///     all app UI.
+///   * optional / upToDate - render [MainShell]. When the status was
+///     "optional" we forward the [UpdateConfig] down so MainShell can show
+///     a one-shot "Update available" dialog after the first frame.
+///
+/// The whole gate is intentionally not aware of auth or onboarding - those
+/// live downstream of the version gate because every install needs the
+/// version check, even first-launch users.
+class AppGate extends StatefulWidget {
+  const AppGate({super.key});
+
+  @override
+  State<AppGate> createState() => _AppGateState();
+}
+
+enum _GateState { loading, required, optional, upToDate }
+
+class _AppGateState extends State<AppGate> {
+  _GateState _state = _GateState.loading;
+  UpdateConfig? _config;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    setState(() => _state = _GateState.loading);
+    final config = await UpdateService.instance.getConfig();
+    if (!mounted) return;
+    if (config == null) {
+      // No config reachable (placeholder URL, offline, parse error). Don't
+      // block the user - just show the app.
+      setState(() => _state = _GateState.upToDate);
+      return;
+    }
+    final version = await UpdateService.instance.currentVersion();
+    if (!mounted) return;
+    final status = UpdateService.instance.checkStatus(config, version);
+    setState(() {
+      _config = config;
+      _state = switch (status) {
+        UpdateStatus.required => _GateState.required,
+        UpdateStatus.optional => _GateState.optional,
+        UpdateStatus.upToDate => _GateState.upToDate,
+      };
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_state) {
+      case _GateState.loading:
+        return const _SplashLoading();
+      case _GateState.required:
+        return ForceUpdateScreen(config: _config);
+      case _GateState.optional:
+        return MainShell(
+          optionalUpdateConfig: _config,
+          optionalUpdateLanguageCode:
+              Localizations.localeOf(context).languageCode,
+        );
+      case _GateState.upToDate:
+        return const MainShell();
+    }
+  }
+}
+
+/// Minimal splash shown while [AppGate] waits on the network. Intentionally
+/// brand-light - the real branding comes from the actual screens.
+class _SplashLoading extends StatelessWidget {
+  const _SplashLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.show_chart,
+              size: 72,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 24),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class TradingDiaryApp extends StatelessWidget {
   final TradeProvider tradeProvider;
   const TradingDiaryApp({super.key, required this.tradeProvider});
@@ -96,7 +200,7 @@ class TradingDiaryApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            home: const MainShell(),
+            home: const AppGate(),
           );
         },
       ),
@@ -106,7 +210,17 @@ class TradingDiaryApp extends StatelessWidget {
 }
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  const MainShell({
+    super.key,
+    this.optionalUpdateConfig,
+    this.optionalUpdateLanguageCode,
+  });
+
+  /// When non-null, MainShell shows an "Update available" dialog once the
+  /// first frame is up. Supplied by [AppGate] when the server config says
+  /// the app is up-to-date but a newer version exists.
+  final UpdateConfig? optionalUpdateConfig;
+  final String? optionalUpdateLanguageCode;
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -128,15 +242,31 @@ class _MainShellState extends State<MainShell> {
     // If the app was cold-started by tapping a notification, jump to the
     // Journal tab once the first frame is up.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final id = NotificationService.instance.consumeLaunchReminderId();
-      if (id != null && mounted) {
+      if (id != null) {
         setState(() => _currentIndex = 1);
         NotificationRouter.lastTappedReminderId.value = id;
       }
+      _maybeShowOptionalUpdateDialog();
     });
 
     // Also handle taps that arrive while the app is in the background/foreground.
     NotificationRouter.lastTappedReminderId.addListener(_onRouterChanged);
+  }
+
+  void _maybeShowOptionalUpdateDialog() {
+    final config = widget.optionalUpdateConfig;
+    if (config == null) return;
+    final lang = widget.optionalUpdateLanguageCode ??
+        Localizations.localeOf(context).languageCode;
+    final message = config.messageFor(lang);
+    // ignore: discarded_futures
+    UpdateDialog.show(
+      context,
+      required: false,
+      message: message.isEmpty ? null : message,
+    );
   }
 
   @override
