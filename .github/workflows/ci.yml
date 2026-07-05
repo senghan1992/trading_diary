@@ -1,0 +1,80 @@
+# GitHub Actions workflow for the trading_diary Flutter app.
+#
+# Runs on every push to main and every PR targeting main. The job:
+#   1. Checks out the repo.
+#   2. Installs the latest stable Flutter SDK.
+#   3. Restores the pub cache so subsequent runs are fast.
+#   4. Runs `flutter pub get`, `flutter analyze`, and `flutter test`.
+#
+# The `dart format` step is intentionally NOT included — pre-commit
+# formatting belongs in the developer's editor, not in CI. CI's job is
+# to catch bugs and test regressions, not bikeshed whitespace.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs of the same workflow on the same branch when a
+# new commit lands — saves CI minutes when a developer pushes rapidly.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: analyze + test (ubuntu, stable)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (stable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # `cache: true` caches `$PUB_CACHE` between runs keyed on
+          # pubspec.yaml so installs are quick.
+          cache: true
+
+      - name: Show toolchain versions
+        run: |
+          flutter --version
+          dart --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Verify analyzer is clean
+        # `--fatal-infos` treats lint info-level findings as errors so
+        # the bar stays high. Drop this flag if it ever becomes too
+        # noisy during a Dart SDK bump.
+        run: flutter analyze --fatal-infos
+
+      - name: Run unit + widget tests
+        # `--reporter expanded` gives more useful failure output than
+        # the default compact reporter.
+        run: flutter test --reporter expanded
+
+      - name: Upload coverage (best-effort)
+        # `flutter test --coverage` writes `coverage/lcov.info`. We only
+        # upload it as an artifact — wiring it to Codecov or Coveralls is
+        # out of scope for the initial CI pass.
+        if: always()
+        run: |
+          flutter test --coverage --reporter compact
+        continue-on-error: true
+
+      - name: Archive coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}
+          path: coverage/lcov.info
+          retention-days: 14
+          if-no-files-found: ignore
