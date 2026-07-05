@@ -40,20 +40,12 @@ class UpdateDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isKo = Localizations.localeOf(context).languageCode == 'ko';
 
-    final title = required
-        ? (isKo ? '업데이트 필요' : 'Update Required')
-        : (isKo ? '업데이트 가능' : 'Update Available');
-
+    final title =
+        required ? l10n.updateRequiredTitle : l10n.updateAvailableTitle;
     final body = (message != null && message!.isNotEmpty)
         ? message!
-        : (isKo
-            ? '더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.'
-            : 'A new version is available. Please update for the best experience.');
-
-    final primaryLabel = l10n.update;
-    final secondaryLabel = l10n.later;
+        : l10n.updateDefaultBody;
 
     return AlertDialog(
       title: Text(title),
@@ -67,22 +59,22 @@ class UpdateDialog extends StatelessWidget {
                   // ignore: discarded_futures
                   UpdateService.instance.openStore();
                 },
-                child: Text(primaryLabel),
+                child: Text(l10n.update),
               ),
             ]
           : [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(secondaryLabel),
+                child: Text(l10n.later),
               ),
               FilledButton(
                 onPressed: () {
-                  // ignore: discarded_futures
-                  UpdateService.instance.openStore();
                   // Don't auto-dismiss: opening the store kicks the user
                   // out of the app. They re-enter when they're done.
+                  // ignore: discarded_futures
+                  UpdateService.instance.openStore();
                 },
-                child: Text(primaryLabel),
+                child: Text(l10n.update),
               ),
             ],
     );

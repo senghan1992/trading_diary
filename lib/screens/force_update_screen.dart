@@ -27,6 +27,11 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
   bool _fetching = false;
   String? _error;
 
+  /// Cached localization handle so [_refetch] and [_openStore] (which are
+  /// invoked from `BuildContext`-less callback paths) can still surface
+  /// localized strings. Refreshed on every build.
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
   @override
   void initState() {
     super.initState();
@@ -47,9 +52,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
     setState(() {
       _config = config;
       _fetching = false;
-      _error = config == null
-          ? '업데이트 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'
-          : null;
+      _error = config == null ? _l10n.updateFetchError : null;
     });
   }
 
@@ -59,9 +62,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
     if (!mounted) return;
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('스토어를 열 수 없습니다. 잠시 후 다시 시도해주세요.'),
-        ),
+        SnackBar(content: Text(_l10n.updateStoreOpenError)),
       );
     }
   }
