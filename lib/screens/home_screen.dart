@@ -19,13 +19,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tradeProvider = context.watch<TradeProvider>();
-    final marketProvider = context.read<MarketProvider>();
+    final marketProvider = context.watch<MarketProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final upColor = themeProvider.upColor;
     final downColor = themeProvider.downColor;
-
+ 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.dashboard),
@@ -44,11 +44,12 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl + 32),
             children: [
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: AdBanner(),
               ),
-              const SizedBox(height: AppSpacing.xl),
               _buildPortfolioHero(context, tradeProvider, isDark, upColor, downColor),
+              const SizedBox(height: AppSpacing.xl),
+              _buildMarketIndices(context, marketProvider, isDark, upColor, downColor),
               const SizedBox(height: AppSpacing.xl),
               _buildStatsGrid(context, tradeProvider, isDark, upColor, downColor),
               const SizedBox(height: AppSpacing.xl),
@@ -67,7 +68,7 @@ class HomeScreen extends StatelessWidget {
   Widget _buildPortfolioHero(BuildContext context, TradeProvider provider, bool isDark, Color upColor, Color downColor) {
     final l10n = AppLocalizations.of(context)!;
     final isProfit = provider.totalProfitLoss >= 0;
-    final resultColor = isProfit ? upColor : downColor;
+    
     // Portfolio total aggregates across all closed trades — which may mix
     // KRW and USD in pathological cases. Pick the dominant market (KRW if
     // any Korean trade exists, else USD) so the symbol doesn't lie about
@@ -84,23 +85,30 @@ class HomeScreen extends StatelessWidget {
       portfolioMarket = inferMarketFromSymbol(closed.first.stockSymbol);
     }
 
+    // Modern Deep Gradient Theme
+    final List<Color> gradientColors = isDark
+        ? [const Color(0xFF2E1A47), const Color(0xFF1E1B4B)] // Deep Violet-Navy
+        : [const Color(0xFF6D28D9), const Color(0xFF4F46E5)]; // Rich Violet-Indigo
+
+    final textPrimaryColor = Colors.white;
+    final textSecondaryColor = Colors.white.withValues(alpha: 0.7);
+
+    // High contrast profit/loss indicator colors on deep gradient
+    final statusColor = isProfit ? const Color(0xFF34D399) : const Color(0xFFF87171); // Light Emerald Green vs Light Soft Red
+    final statusBgColor = statusColor.withValues(alpha: 0.15);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: isDark
-            ? [const Color(0xFF1C1C26), const Color(0xFF15151C)]
-            : [AppColors.purple.withValues(alpha: 0.08), AppColors.lightCard],
+          colors: gradientColors,
         ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBorder,
-        ),
-        boxShadow: isDark ? null : [
+        boxShadow: [
           BoxShadow(
-            color: AppColors.purple.withValues(alpha: 0.08),
+            color: (isDark ? Colors.black : const Color(0xFF4F46E5)).withValues(alpha: isDark ? 0.4 : 0.2),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -110,8 +118,13 @@ class HomeScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.portfolioSummary,
-            style: Theme.of(context).textTheme.labelSmall,
+            l10n.portfolioSummary.toUpperCase(),
+            style: TextStyle(
+              color: textSecondaryColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           FittedBox(
@@ -126,38 +139,42 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 34,
                 fontWeight: FontWeight.w800,
-                color: resultColor,
+                color: textPrimaryColor,
                 letterSpacing: -0.5,
                 height: 1.1,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: resultColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                  size: 14,
-                  color: resultColor,
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: statusBgColor,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${provider.winRate.toStringAsFixed(1)}% ${l10n.winRate}',
-                  style: TextStyle(
-                    color: resultColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      size: 14,
+                      color: statusColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${provider.winRate.toStringAsFixed(1)}% ${l10n.winRate}',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -257,7 +274,7 @@ class HomeScreen extends StatelessWidget {
     final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
     final isMediumOrUp = context.isMediumOrUp;
 
-    final items = positions.take(isMediumOrUp ? 6 : 3).map((trade) => _buildPositionRow(trade, formatter, textColor, subColor)).toList();
+    final items = positions.take(isMediumOrUp ? 6 : 3).map((trade) => _buildPositionRow(context, trade, formatter, textColor, subColor)).toList();
 
     return _buildSectionCard(
       context,
@@ -279,7 +296,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPositionRow(TradeEntry trade, NumberFormat formatter, Color textColor, Color subColor) {
+  Widget _buildPositionRow(BuildContext context, TradeEntry trade, NumberFormat formatter, Color textColor, Color subColor) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
@@ -312,7 +330,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   // Infer market for legacy trades (market==null) so pre-
                   // field trades still render with the right unit.
-                  '${formatTradeMoney(trade.entryPrice, trade.market ?? inferMarketFromSymbol(trade.stockSymbol))} \u00d7 ${trade.quantity}주',
+                  '${formatTradeMoney(trade.entryPrice, trade.market ?? inferMarketFromSymbol(trade.stockSymbol))} \u00d7 ${trade.quantity}${l10n.sharesUnit}',
                   style: TextStyle(fontSize: 12, color: subColor),
                 ),
               ],
@@ -522,6 +540,121 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildMarketIndices(BuildContext context, MarketProvider provider, bool isDark, Color upColor, Color downColor) {
+    final l10n = AppLocalizations.of(context)!;
+    final indices = provider.indices;
+    if (indices.isEmpty) return const SizedBox.shrink();
+
+    final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBorder.withValues(alpha: 0.4);
+    final textColor = isDark ? AppColors.white : AppColors.lightText;
+    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Text(
+            l10n.marketIndices.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: isDark ? textSecondaryColor(isDark) : subColor,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 86,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: indices.length,
+            itemBuilder: (context, index) {
+              final idx = indices[index];
+              final isUp = idx.changePrice >= 0;
+              final color = isUp ? upColor : downColor;
+              final sign = isUp ? '+' : '';
+
+              return Container(
+                width: 146,
+                margin: EdgeInsets.only(
+                  right: index == indices.length - 1 ? 0 : AppSpacing.md,
+                ),
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: borderColor),
+                  boxShadow: isDark ? null : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          idx.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Icon(
+                          isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                          size: 14,
+                          color: color,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      idx.currentPrice.toStringAsFixed(2),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                        letterSpacing: -0.3,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '$sign${idx.changePrice.toStringAsFixed(2)} ($sign${idx.changePercent.toStringAsFixed(2)}%)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color textSecondaryColor(bool isDark) {
+    return Colors.white.withValues(alpha: 0.7);
   }
 }
 

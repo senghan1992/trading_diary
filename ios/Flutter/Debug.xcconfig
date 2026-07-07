@@ -5,4 +5,4 @@
 // ID (safe for development, displays placeholder ads). Replace this with the
 // real AdMob app ID from your console in ios/Flutter/Release.xcconfig before
 // App Store submission. Must match the value registered in your AdMob account.
-GAD_APPLICATION_ID = ca-app-pub-3940256099942544~1458002511
+GAD_APPLICATION_ID = ca-app-pub-7397907772524584~8264213370

@@ -185,9 +185,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
         child: ListView(
           padding: const EdgeInsets.only(bottom: AppSpacing.xxxl),
           children: [
-            const SizedBox(height: AppSpacing.sm),
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: AdBanner(),
             ),
             _buildFilterRow(context, l10n, isDark, textColor, subColor),
@@ -1016,10 +1015,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
     final String resultLabel;
     if (isWin) {
       resultColor = AppColors.green;
-      resultLabel = l10n.success;
+      resultLabel = l10n.win;
     } else if (isLoss) {
       resultColor = AppColors.red;
-      resultLabel = l10n.failure;
+      resultLabel = l10n.loss;
     } else {
       resultColor = AppColors.purpleLight;
       resultLabel = l10n.pendingOnly;

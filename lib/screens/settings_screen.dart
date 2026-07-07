@@ -28,10 +28,10 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ResponsiveContainer(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xxl + 32),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl + 32),
           children: [
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: AdBanner(),
             ),
             _SectionHeader(title: l10n.display, subtitle: l10n.displaySubtitle),

@@ -5,4 +5,4 @@
 // App Store submission. The current value points at Google's official sample
 // app, which iOS App Review will reject. Pair this with --dart-define flags
 // for the ad unit IDs (see lib/services/ad_service.dart).
-GAD_APPLICATION_ID = ca-app-pub-3940256099942544~1458002511
+GAD_APPLICATION_ID = ca-app-pub-7397907772524584~8264213370

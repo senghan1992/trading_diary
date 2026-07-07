@@ -27,18 +27,61 @@ class AdService {
   //
   // Defaults below are the official Google sample IDs and are correct for
   // dev / debug builds.
-  static const String bannerAdUnitId = String.fromEnvironment(
-    'ADMOB_BANNER_ID',
-    defaultValue: 'ca-app-pub-3940256099942544/2934735716',
-  );
-  static const String interstitialAdUnitId = String.fromEnvironment(
-    'ADMOB_INTERSTITIAL_ID',
-    defaultValue: 'ca-app-pub-3940256099942544/4411468910',
-  );
-  static const String nativeAdUnitId = String.fromEnvironment(
-    'ADMOB_NATIVE_ID',
-    defaultValue: 'ca-app-pub-3940256099942544/2247696110',
-  );
+  static String get bannerAdUnitId {
+    const String env = String.fromEnvironment('ADMOB_BANNER_ID');
+    if (env.isNotEmpty) return env;
+
+    // 디버그 모드에서는 구글 공식 테스트 광고 ID 사용
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/6300978111'; // Android 테스트 배너
+      } else if (Platform.isIOS) {
+        return 'ca-app-pub-3940256099942544/2934735716'; // iOS 테스트 배너
+      }
+      return '';
+    }
+
+    // 릴리스 빌드 시 실계정 광고 ID 반환
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-7397907772524584/7334275084';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-7397907772524584/6136743484';
+    }
+    return '';
+  }
+
+  static String get interstitialAdUnitId {
+    const String env = String.fromEnvironment('ADMOB_INTERSTITIAL_ID');
+    if (env.isNotEmpty) return env;
+
+    // 디버그 모드에서는 구글 공식 테스트 광고 ID 사용
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/1033173712'; // Android 테스트 전면
+      } else if (Platform.isIOS) {
+        return 'ca-app-pub-3940256099942544/4411468910'; // iOS 테스트 전면
+      }
+      return '';
+    }
+
+    // 릴리스 빌드 시 실계정 광고 ID 반환
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-7397907772524584/8102350287';
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-7397907772524584/2584475892';
+    }
+    return '';
+  }
+
+  static String get nativeAdUnitId {
+    const String env = String.fromEnvironment('ADMOB_NATIVE_ID');
+    if (env.isNotEmpty) return env;
+
+    if (kDebugMode) {
+      return 'ca-app-pub-3940256099942544/2247696110'; // 공용 테스트 네이티브
+    }
+    return '';
+  }
 
   InterstitialAd? _interstitialAd;
   bool _initialized = false;

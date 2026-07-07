@@ -30,13 +30,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allResults => 'All Results';
 
   @override
-  String get winsOnly => 'Wins';
+  String get winsOnly => 'Profit Only';
 
   @override
-  String get lossesOnly => 'Losses';
+  String get lossesOnly => 'Loss Only';
 
   @override
-  String get pendingOnly => 'Open';
+  String get pendingOnly => 'Pending';
 
   @override
   String get allStates => 'All';
@@ -54,13 +54,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get total => 'Total';
 
   @override
-  String get win => 'Win';
+  String get win => 'Gain';
 
   @override
   String get loss => 'Loss';
 
   @override
-  String get winRate => 'Win Rate';
+  String get winRate => 'Profit Rate';
 
   @override
   String get marketIndices => 'Market Indices';
@@ -90,10 +90,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journal => 'Journal';
 
   @override
-  String get addTrade => 'Add Trade';
+  String get addTrade => 'Record Trade';
 
   @override
-  String get editTrade => 'Edit Trade';
+  String get editTrade => 'Edit Record';
 
   @override
   String get stockName => 'Stock Name';
@@ -117,6 +117,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shares => 'Shares';
 
   @override
+  String get sharesUnit => 'shares';
+
+  @override
   String get entryDate => 'Buy Date';
 
   @override
@@ -135,7 +138,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notes => 'Notes';
 
   @override
-  String get save => 'Save';
+  String get save => 'Complete';
 
   @override
   String get cancel => 'Cancel';
@@ -260,7 +263,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Try a different date or change the filters.';
 
   @override
-  String get reviewAddTradeForDay => 'Add trade for this day';
+  String get reviewAddTradeForDay => 'Record trade for this day';
 
   @override
   String get weekdayShortMon => 'Mon';
@@ -350,10 +353,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loading => 'Loading...';
 
   @override
-  String get success => 'Success';
+  String get success => 'Saved successfully';
 
   @override
-  String get failure => 'Failure';
+  String get failure => 'Failed to save';
 
   @override
   String get position => 'Position';
@@ -383,10 +386,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holdings => 'Holdings';
 
   @override
-  String get addPosition => 'Add Position';
+  String get addPosition => 'Record Entry';
 
   @override
-  String get closePosition => 'Close Position';
+  String get closePosition => 'Record Exit';
 
   @override
   String get simulate => 'Simulate';

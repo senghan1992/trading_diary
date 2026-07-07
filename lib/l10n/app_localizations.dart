@@ -143,13 +143,13 @@ abstract class AppLocalizations {
   /// No description provided for @winsOnly.
   ///
   /// In ko, this message translates to:
-  /// **'성공만'**
+  /// **'수익만'**
   String get winsOnly;
 
   /// No description provided for @lossesOnly.
   ///
   /// In ko, this message translates to:
-  /// **'실패만'**
+  /// **'손실만'**
   String get lossesOnly;
 
   /// No description provided for @pendingOnly.
@@ -191,19 +191,19 @@ abstract class AppLocalizations {
   /// No description provided for @win.
   ///
   /// In ko, this message translates to:
-  /// **'승'**
+  /// **'수익'**
   String get win;
 
   /// No description provided for @loss.
   ///
   /// In ko, this message translates to:
-  /// **'패'**
+  /// **'손실'**
   String get loss;
 
   /// No description provided for @winRate.
   ///
   /// In ko, this message translates to:
-  /// **'승률'**
+  /// **'수익 비율'**
   String get winRate;
 
   /// No description provided for @marketIndices.
@@ -263,13 +263,13 @@ abstract class AppLocalizations {
   /// No description provided for @addTrade.
   ///
   /// In ko, this message translates to:
-  /// **'거래 추가'**
+  /// **'매매 기록하기'**
   String get addTrade;
 
   /// No description provided for @editTrade.
   ///
   /// In ko, this message translates to:
-  /// **'거래 수정'**
+  /// **'매매 기록 수정'**
   String get editTrade;
 
   /// No description provided for @stockName.
@@ -314,6 +314,12 @@ abstract class AppLocalizations {
   /// **'수량'**
   String get shares;
 
+  /// No description provided for @sharesUnit.
+  ///
+  /// In ko, this message translates to:
+  /// **'주'**
+  String get sharesUnit;
+
   /// No description provided for @entryDate.
   ///
   /// In ko, this message translates to:
@@ -353,7 +359,7 @@ abstract class AppLocalizations {
   /// No description provided for @save.
   ///
   /// In ko, this message translates to:
-  /// **'저장'**
+  /// **'기록 완료'**
   String get save;
 
   /// No description provided for @cancel.
@@ -587,7 +593,7 @@ abstract class AppLocalizations {
   /// No description provided for @reviewAddTradeForDay.
   ///
   /// In ko, this message translates to:
-  /// **'이 날에 거래 추가'**
+  /// **'이 날에 매매 기록하기'**
   String get reviewAddTradeForDay;
 
   /// No description provided for @weekdayShortMon.
@@ -767,13 +773,13 @@ abstract class AppLocalizations {
   /// No description provided for @success.
   ///
   /// In ko, this message translates to:
-  /// **'성공'**
+  /// **'저장 완료'**
   String get success;
 
   /// No description provided for @failure.
   ///
   /// In ko, this message translates to:
-  /// **'실패'**
+  /// **'저장 실패'**
   String get failure;
 
   /// No description provided for @position.
@@ -833,13 +839,13 @@ abstract class AppLocalizations {
   /// No description provided for @addPosition.
   ///
   /// In ko, this message translates to:
-  /// **'포지션 추가'**
+  /// **'진입 기록하기'**
   String get addPosition;
 
   /// No description provided for @closePosition.
   ///
   /// In ko, this message translates to:
-  /// **'포지션 매도'**
+  /// **'청산 기록하기'**
   String get closePosition;
 
   /// No description provided for @simulate.

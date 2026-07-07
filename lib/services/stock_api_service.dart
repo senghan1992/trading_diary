@@ -219,17 +219,18 @@ class StockApiService {
     if (!_shouldRefreshIndices() && _lastRealIndices != null) return _lastRealIndices!;
 
     try {
-      // Use Yahoo Finance for Korean indices, Finnhub for US index
+      // Use Yahoo Finance for all indices (including NASDAQ ^IXIC) so that NASDAQ
+      // is always visible without requiring a Finnhub API Key override.
       final results = await Future.wait([
         _fetchChartMeta('^KS11'),
         _fetchChartMeta('^KQ11'),
-        _fetchFinnhubQuote('^IXIC'),
+        _fetchChartMeta('^IXIC'),
       ]);
 
       final indices = [
         results[0] != null ? _parseIndexMeta('^KS11', 'KOSPI', results[0]!) : null,
         results[1] != null ? _parseIndexMeta('^KQ11', 'KOSDAQ', results[1]!) : null,
-        results[2] != null ? _parseFinnhubIndexMeta('^IXIC', 'NASDAQ', results[2]!) : null,
+        results[2] != null ? _parseIndexMeta('^IXIC', 'NASDAQ', results[2]!) : null,
       ];
 
       final valid = indices.whereNotNull().toList();
@@ -245,14 +246,7 @@ class StockApiService {
     return _lastRealIndices ?? _mockIndices;
   }
 
-  static MarketIndex? _parseFinnhubIndexMeta(String symbol, String name, Map<String, dynamic> quote) {
-    final price = (quote['c'] as num?)?.toDouble();
-    final prevClose = (quote['pc'] as num?)?.toDouble();
-    if (price == null || price == 0) return null;
-    final change = price - (prevClose ?? price);
-    final changePct = prevClose != null && prevClose > 0 ? (change / prevClose * 100) : 0.0;
-    return MarketIndex(name: name, symbol: symbol, currentPrice: price, changePrice: change, changePercent: changePct);
-  }
+
 
   static final _mockIndices = [
     MarketIndex(name: 'KOSPI', symbol: '^KS11', currentPrice: 2680.50, changePrice: 15.30, changePercent: 0.57),

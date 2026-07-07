@@ -43,39 +43,43 @@ class JournalScreen extends StatelessWidget {
           title: Text(l10n.journal, style: TextStyle(fontWeight: FontWeight.w700, color: textColor)),
           centerTitle: false,
           actions: [],
-          bottom: TabBar(
-            indicatorColor: AppColors.purple,
-            labelColor: AppColors.purple,
-            unselectedLabelColor: subColor,
-            indicatorWeight: 3,
-            dividerColor: Colors.transparent,
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.pending_outlined, size: 18, color: subColor),
-                    const SizedBox(width: 6),
-                    Text('${l10n.openPosition} (${provider.openPositions.length})', style: TextStyle(color: subColor)),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_outline, size: 18, color: subColor),
-                    const SizedBox(width: 6),
-                    Text('${l10n.closedPosition} (${provider.closedPositions.length})', style: TextStyle(color: subColor)),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ),
         body: ResponsiveContainer(
           child: Column(
             children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: AdBanner(),
+              ),
+              TabBar(
+                indicatorColor: AppColors.purple,
+                labelColor: AppColors.purple,
+                unselectedLabelColor: subColor,
+                indicatorWeight: 3,
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.pending_outlined, size: 18, color: subColor),
+                        const SizedBox(width: 6),
+                        Text('${l10n.openPosition} (${provider.openPositions.length})', style: TextStyle(color: subColor)),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_outline, size: 18, color: subColor),
+                        const SizedBox(width: 6),
+                        Text('${l10n.closedPosition} (${provider.closedPositions.length})', style: TextStyle(color: subColor)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               Expanded(
                 child: TabBarView(
                   children: [
@@ -83,20 +87,6 @@ class JournalScreen extends StatelessWidget {
                     _buildClosedTrades(context, provider, isDark, bgColor, cardColor, textColor, subColor, borderColor, tabColor),
                   ],
                 ),
-              ),
-              // Ad sits flush under the journal content (above the FAB), so the
-              // tab dividers feel uncluttered and the journal list reads top-to-
-              // bottom without an ad interrupting the first scroll.
-              // Right padding reserves space for the extended FAB ("거래 추가")
-              // so it doesn't visually collide with the ad.
-              const Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.sm,
-                  AppSpacing.sm,
-                  96,
-                  AppSpacing.sm,
-                ),
-                child: AdBanner(),
               ),
             ],
           ),
@@ -352,7 +342,7 @@ class JournalScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${trade.quantity}주 @ ${formatter.format(trade.entryPrice)}',
+                            '${trade.quantity}${l10n.sharesUnit} @ ${formatter.format(trade.entryPrice)}',
                             maxLines: 1,
                             style: TextStyle(
                               color: subColor,
@@ -514,7 +504,7 @@ class JournalScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: _buildInfoChip(l10n.shares, '${trade.quantity}주', bgColor, textColor, subColor),
+                        child: _buildInfoChip(l10n.shares, '${trade.quantity}${l10n.sharesUnit}', bgColor, textColor, subColor),
                       ),
                     ],
                   ),
@@ -548,32 +538,39 @@ class JournalScreen extends StatelessWidget {
 
   Widget _buildInfoChip(String label, String value, Color bgColor, Color textColor, Color subColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+              ),
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: subColor,
-              fontSize: 10,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: subColor,
+                fontSize: 9,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

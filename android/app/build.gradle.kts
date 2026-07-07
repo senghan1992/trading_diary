@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -49,29 +51,28 @@ android {
     //   3. Commit this file as-is; the conditional below activates the
     //      production signing config only when the keystore file is present,
     //      so `flutter run --release` keeps working locally.
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
+    }
+
     signingConfigs {
         create("release") {
-            val ksFile = file("keystore/trading-diary-release.jks")
-            if (ksFile.exists()) {
-                storeFile = ksFile
-                storePassword = providers.gradleProperty("RELEASE_STORE_PASSWORD").orNull
-                    ?: System.getenv("RELEASE_STORE_PASSWORD")
-                keyAlias = providers.gradleProperty("RELEASE_KEY_ALIAS").orNull
-                    ?: System.getenv("RELEASE_KEY_ALIAS")
-                keyPassword = providers.gradleProperty("RELEASE_KEY_PASSWORD").orNull
-                    ?: System.getenv("RELEASE_KEY_PASSWORD")
+            if (keystorePropertiesFile.exists()) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
             }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = if (file("keystore/trading-diary-release.jks").exists()) {
+            signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
-                // No keystore found — fall back to debug keys so `flutter run
-                // --release` continues to work for local testing. Never ship
-                // this configuration to the store.
                 signingConfigs.getByName("debug")
             }
         }

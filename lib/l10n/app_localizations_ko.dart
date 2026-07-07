@@ -30,10 +30,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get allResults => '전체 결과';
 
   @override
-  String get winsOnly => '성공만';
+  String get winsOnly => '수익만';
 
   @override
-  String get lossesOnly => '실패만';
+  String get lossesOnly => '손실만';
 
   @override
   String get pendingOnly => '진행중만';
@@ -54,13 +54,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get total => '총계';
 
   @override
-  String get win => '승';
+  String get win => '수익';
 
   @override
-  String get loss => '패';
+  String get loss => '손실';
 
   @override
-  String get winRate => '승률';
+  String get winRate => '수익 비율';
 
   @override
   String get marketIndices => '시장 지수';
@@ -90,10 +90,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get journal => '일지';
 
   @override
-  String get addTrade => '거래 추가';
+  String get addTrade => '매매 기록하기';
 
   @override
-  String get editTrade => '거래 수정';
+  String get editTrade => '매매 기록 수정';
 
   @override
   String get stockName => '종목명';
@@ -117,6 +117,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shares => '수량';
 
   @override
+  String get sharesUnit => '주';
+
+  @override
   String get entryDate => '매수일';
 
   @override
@@ -135,7 +138,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notes => '메모';
 
   @override
-  String get save => '저장';
+  String get save => '기록 완료';
 
   @override
   String get cancel => '취소';
@@ -258,7 +261,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reviewNoTradesBody => '다른 날짜를 선택하거나 필터 조건을 바꿔보세요.';
 
   @override
-  String get reviewAddTradeForDay => '이 날에 거래 추가';
+  String get reviewAddTradeForDay => '이 날에 매매 기록하기';
 
   @override
   String get weekdayShortMon => '월';
@@ -348,10 +351,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get loading => '로딩 중...';
 
   @override
-  String get success => '성공';
+  String get success => '저장 완료';
 
   @override
-  String get failure => '실패';
+  String get failure => '저장 실패';
 
   @override
   String get position => '포지션';
@@ -381,10 +384,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get holdings => '보유';
 
   @override
-  String get addPosition => '포지션 추가';
+  String get addPosition => '진입 기록하기';
 
   @override
-  String get closePosition => '포지션 매도';
+  String get closePosition => '청산 기록하기';
 
   @override
   String get simulate => '시뮬레이션';

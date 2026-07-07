@@ -54,7 +54,7 @@
              AdMob App ID from the AdMob console before publishing. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-7397907772524584~5074907866" />
 
         <!-- flutter_local_notifications: required for scheduling and reboot reschedule -->
         <receiver

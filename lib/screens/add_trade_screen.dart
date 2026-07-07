@@ -63,7 +63,7 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
     final subColor =
         isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
     final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final inputFill = isDark ? AppColors.darkSurface : AppColors.lightBg;
+    final inputFill = isDark ? AppColors.darkSurface : AppColors.white;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -648,6 +648,75 @@ class _StockPickerSheetState extends State<_StockPickerSheet> {
   ///   3. No query yet   → "type to search" placeholder
   ///   4. No results     → "no matches" placeholder (with the API's hint if any)
   ///   5. Results        → scrollable list
+  void _selectManualStock(String query, MarketType market) {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return;
+    
+    final manualStock = Stock(
+      symbol: cleanQuery.toUpperCase(), // 티커는 통상 대문자
+      name: cleanQuery,
+      nameKr: cleanQuery,
+      market: market,
+      currentPrice: 0,
+      changePrice: 0,
+      changePercent: 0,
+      openPrice: 0,
+      highPrice: 0,
+      lowPrice: 0,
+      prevClose: 0,
+      volume: 0,
+    );
+    widget.onSelected(manualStock);
+  }
+
+  Widget _buildManualAddOptions(String query) {
+    final q = query.trim();
+    if (q.isEmpty) return const SizedBox();
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          '찾으시는 종목이 목록에 없나요?',
+          style: TextStyle(
+            color: widget.textColor.withValues(alpha: 0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: [
+            _buildManualChip(q, MarketType.kospi, 'KOSPI 수동 등록'),
+            _buildManualChip(q, MarketType.kosdaq, 'KOSDAQ 수동 등록'),
+            _buildManualChip(q, MarketType.nasdaq, 'NASDAQ 수동 등록'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManualChip(String query, MarketType market, String label) {
+    return ActionChip(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      backgroundColor: AppColors.purpleSubtle,
+      side: BorderSide(color: AppColors.purple.withValues(alpha: 0.3)),
+      label: Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.purple,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onPressed: () => _selectManualStock(query, market),
+    );
+  }
+
   Widget _buildBody(AppLocalizations l10n, ScrollController scrollCtrl) {
     if (_isSearching) {
       return Center(
@@ -692,6 +761,7 @@ class _StockPickerSheetState extends State<_StockPickerSheet> {
                       label: Text(l10n.search),
                       style: TextButton.styleFrom(foregroundColor: AppColors.purple),
                     ),
+                    _buildManualAddOptions(_searchCtrl.text),
                   ],
                 ),
               ),
@@ -718,14 +788,21 @@ class _StockPickerSheetState extends State<_StockPickerSheet> {
         icon: Icons.search_off_rounded,
         message: l10n.noResults,
         subColor: widget.subColor,
+        extraChild: _buildManualAddOptions(_committedQuery),
       );
     }
 
     return ListView.builder(
       key: const ValueKey('results'),
       controller: scrollCtrl,
-      itemCount: results.length,
+      itemCount: results.length + 1,
       itemBuilder: (_, i) {
+        if (i == results.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: _buildManualAddOptions(_committedQuery),
+          );
+        }
         final s = results[i];
         return ListTile(
           leading: CircleAvatar(
@@ -764,6 +841,7 @@ class _StockPickerSheetState extends State<_StockPickerSheet> {
     required IconData icon,
     required String message,
     required Color subColor,
+    Widget? extraChild,
   }) {
     // Previously a plain `Center` — overflowed in landscape-tablet dialogs
     // because the body sits inside an `Expanded` whose height is squeezed
@@ -799,6 +877,7 @@ class _StockPickerSheetState extends State<_StockPickerSheet> {
                       height: 1.4,
                     ),
                   ),
+                  extraChild ?? const SizedBox.shrink(),
                 ],
               ),
             ),
@@ -877,57 +956,99 @@ class _HeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: context.isMediumOrUp ? AppSpacing.lg : AppSpacing.md,
+        horizontal: AppSpacing.xl,
+        vertical: context.isMediumOrUp ? AppSpacing.xl : AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  AppColors.purpleSubtle,
+                  AppColors.darkSurface.withValues(alpha: 0.6),
+                ]
+              : [
+                  AppColors.purpleSubtle.withValues(alpha: 0.05),
+                  AppColors.white,
+                ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.06),
+          color: isDark
+              ? AppColors.purpleLight.withValues(alpha: 0.15)
+              : AppColors.purpleLight.withValues(alpha: 0.1),
           width: 1,
         ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: AppColors.purple.withValues(alpha: 0.03),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                )
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: AppColors.purpleSubtle,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.purpleLight, AppColors.purple],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.purple.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                )
+              ],
             ),
             child: const Icon(
-              Icons.edit_note_rounded,
-              size: 18,
-              color: AppColors.purpleLight,
+              Icons.insights_rounded,
+              size: 20,
+              color: AppColors.white,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  '새 매매 기록',
+                Text(
+                  '새로운 매매 기록',
                   style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
+                    color: isDark ? Colors.white : AppColors.lightText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  '차분하게, 원칙대로 기록해요',
+                  '원칙을 지키는 투자의 시작',
                   style: TextStyle(
                     color: subColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
@@ -951,31 +1072,32 @@ class _NumberedSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          index,
-          style: TextStyle(
-            color: AppColors.purpleLight,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-            fontFeatures: const [FontFeature.tabularFigures()],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.purpleSubtle.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              index,
+              style: const TextStyle(
+                color: AppColors.purple,
+                fontWeight: FontWeight.w900,
+                fontSize: 11,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-            color: isDark ? AppColors.white : AppColors.lightText,
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1003,22 +1125,31 @@ class _PremiumStockSelector extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: selected
-                  ? AppColors.purpleLight.withValues(alpha: 0.25)
+                  ? AppColors.purpleLight.withValues(alpha: 0.35)
                   : (isDark
-                      ? AppColors.purpleLight.withValues(alpha: 0.35)
+                      ? AppColors.white.withValues(alpha: 0.08)
                       : AppColors.lightBorder),
-              width: selected ? 1 : (isDark ? 1.2 : 1),
+              width: selected ? 1.5 : 1,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.purple.withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : [],
           ),
           child: selected
               ? Row(
@@ -1040,17 +1171,17 @@ class _PremiumStockSelector extends StatelessWidget {
                             style: TextStyle(
                               color: textColor,
                               fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
                             '${stock!.symbol} · ${stock!.market.name.toUpperCase()}',
                             style: TextStyle(
                               color: subColor,
                               fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -1065,46 +1196,57 @@ class _PremiumStockSelector extends StatelessWidget {
                           formatTradeMoney(stock!.currentPrice, stock!.market),
                           style: TextStyle(
                             color: textColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
                             fontFeatures: const [
                               FontFeature.tabularFigures(),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              stock!.isPositive
-                                  ? Icons.trending_up
-                                  : Icons.trending_down,
-                              size: 11,
-                              color: stock!.isPositive
-                                  ? AppColors.green
-                                  : AppColors.red,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${stock!.changePercent >= 0 ? '+' : ''}${stock!.changePercent.toStringAsFixed(2)}%',
-                              style: TextStyle(
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: (stock!.isPositive ? AppColors.green : AppColors.red)
+                                .withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                stock!.isPositive
+                                    ? Icons.trending_up
+                                    : Icons.trending_down,
+                                size: 10,
                                 color: stock!.isPositive
                                     ? AppColors.green
                                     : AppColors.red,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Text(
+                                '${stock!.changePercent >= 0 ? '+' : ''}${stock!.changePercent.toStringAsFixed(2)}%',
+                                style: TextStyle(
+                                  color: stock!.isPositive
+                                      ? AppColors.green
+                                      : AppColors.red,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(width: AppSpacing.xs),
-                    Icon(Icons.chevron_right, color: subColor, size: 18),
+                    Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
                   ],
                 )
               : Row(
@@ -1113,11 +1255,16 @@ class _PremiumStockSelector extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.purpleSubtle,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.purpleLight.withValues(alpha: 0.15),
+                            AppColors.purple.withValues(alpha: 0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
-                        Icons.search,
+                        Icons.search_rounded,
                         color: AppColors.purpleLight,
                         size: 20,
                       ),
@@ -1133,21 +1280,23 @@ class _PremiumStockSelector extends StatelessWidget {
                             style: TextStyle(
                               color: textColor,
                               fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
-                            '탭하여 검색 ·  KOSPI / KOSDAQ / NASDAQ',
+                            '탭하여 검색 · KOSPI / KOSDAQ / NASDAQ',
                             style: TextStyle(
                               color: subColor,
                               fontSize: 11,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(Icons.chevron_right, color: subColor, size: 18),
+                    Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
                   ],
                 ),
         ),
@@ -1167,8 +1316,19 @@ class _GradientAvatar extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: AppColors.purpleSubtle,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.purpleLight.withValues(alpha: 0.25),
+            AppColors.purple.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AppColors.purpleLight.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Center(
         child: Text(
@@ -1207,11 +1367,11 @@ class _SegmentedTradeMode extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      height: 48,
-      padding: const EdgeInsets.all(4),
+      height: 52,
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : AppColors.lightBg,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: isDark
               ? AppColors.white.withValues(alpha: 0.06)
@@ -1224,7 +1384,7 @@ class _SegmentedTradeMode extends StatelessWidget {
           Expanded(
             child: _SegmentItem(
               label: entryOnlyLabel,
-              icon: Icons.shopping_cart_outlined,
+              icon: Icons.login_rounded,
               active: isPositionOnly,
               onTap: () => onChanged(true),
               subColor: subColor,
@@ -1234,7 +1394,7 @@ class _SegmentedTradeMode extends StatelessWidget {
           Expanded(
             child: _SegmentItem(
               label: withExitLabel,
-              icon: Icons.swap_horiz_rounded,
+              icon: Icons.swap_horizontal_circle_outlined,
               active: !isPositionOnly,
               onTap: () => onChanged(false),
               subColor: subColor,
@@ -1269,23 +1429,30 @@ class _SegmentItem extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(10),
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
             color: active
-                ? (isDark ? AppColors.darkCardHover : cardColor)
+                ? (isDark ? AppColors.darkCard : Colors.white)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+            borderRadius: BorderRadius.circular(10),
             border: active
                 ? Border.all(
-                    color: active
-                        ? AppColors.purpleLight
-                        : Colors.transparent,
+                    color: AppColors.purpleLight.withValues(alpha: 0.15),
                     width: 1,
                   )
                 : null,
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : [],
           ),
           child: Center(
             child: Row(
@@ -1293,16 +1460,16 @@ class _SegmentItem extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  size: 15,
-                  color: active ? AppColors.purpleLight : subColor,
+                  size: 16,
+                  color: active ? AppColors.purpleLight : subColor.withValues(alpha: 0.8),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    color: active ? AppColors.purpleLight : subColor,
+                    color: active ? AppColors.purpleLight : subColor.withValues(alpha: 0.8),
                     fontSize: 13,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
               ],
@@ -1344,6 +1511,14 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
   final FocusNode _focus = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _focus.dispose();
     super.dispose();
@@ -1351,60 +1526,95 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controller,
-      focusNode: _focus,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: TextStyle(
-        color: widget.textColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        fontFeatures: const [FontFeature.tabularFigures()],
+    final focused = _focus.hasFocus;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : [],
       ),
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      decoration: InputDecoration(
-        labelText: widget.label,
-        labelStyle: TextStyle(color: widget.subColor, fontSize: 14),
-        prefixIcon: Icon(widget.icon, color: widget.subColor, size: 20),
-        prefixText: widget.prefix,
-        prefixStyle: TextStyle(
+      child: TextFormField(
+        controller: widget.controller,
+        focusNode: _focus,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: TextStyle(
           color: widget.textColor,
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
-        filled: true,
-        fillColor: widget.fillColor,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.lg,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: widget.isDark
-                ? AppColors.white.withValues(alpha: 0.06)
-                : AppColors.lightBorder,
-            width: 1,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: focused ? AppColors.purpleLight : widget.subColor,
+            fontSize: 13,
+            fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.only(left: 12, right: 8),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: focused
+                  ? AppColors.purpleLight.withValues(alpha: 0.1)
+                  : widget.fillColor.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              widget.icon,
+              color: focused ? AppColors.purpleLight : widget.subColor,
+              size: 16,
+            ),
+          ),
+          prefixText: widget.prefix,
+          prefixStyle: TextStyle(
+            color: widget.textColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+          filled: true,
+          fillColor: widget.fillColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(
+              color: widget.isDark
+                  ? AppColors.white.withValues(alpha: 0.15)
+                  : AppColors.purple.withValues(alpha: 0.12),
+              width: 1.2,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(
+              color: widget.isDark
+                  ? AppColors.white.withValues(alpha: 0.12)
+                  : AppColors.purple.withValues(alpha: 0.12),
+              width: 1.2,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: const BorderSide(
+              color: AppColors.purpleLight,
+              width: 1.5,
+            ),
           ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(
-            color: widget.isDark
-                ? AppColors.white.withValues(alpha: 0.06)
-                : AppColors.lightBorder,
-            width: 1,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(
-            color: AppColors.purpleLight,
-            width: 1.5,
-          ),
-        ),
+        validator: widget.validator,
       ),
-      validator: widget.validator,
     );
   }
 }
@@ -1448,126 +1658,90 @@ class _QuantityStepperState extends State<_QuantityStepper> {
     super.dispose();
   }
 
-  void _bump(int delta) {
-    final cur = int.tryParse(widget.controller.text) ?? 0;
-    final next = (cur + delta).clamp(0, 999999);
-    widget.controller.text = next.toString();
-    widget.controller.selection = TextSelection.collapsed(
-      offset: widget.controller.text.length,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final focused = _focus.hasFocus;
-    // Single container, no nested shadows. Border thickens on focus for the
-    // affordance, no extra glow — premium but simple.
-    final borderColor = focused
-        ? AppColors.purpleLight
-        : (widget.isDark
-            ? AppColors.white.withValues(alpha: 0.06)
-            : AppColors.lightBorder);
-    return Container(
-      height: 52,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        color: widget.fillColor,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: borderColor, width: focused ? 1.5 : 1),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : [],
       ),
-      child: Row(
-        children: [
-          const SizedBox(width: AppSpacing.md),
-          Icon(
-            Icons.confirmation_number_outlined,
-            color: widget.subColor,
-            size: 18,
+      child: TextFormField(
+        controller: widget.controller,
+        focusNode: _focus,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: TextStyle(
+          color: widget.textColor,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        decoration: InputDecoration(
+          labelText: widget.label,
+          labelStyle: TextStyle(
+            color: focused ? AppColors.purpleLight : widget.subColor,
+            fontSize: 13,
+            fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            widget.label,
-            style: TextStyle(
-              color: widget.subColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          prefixIcon: Container(
+            margin: const EdgeInsets.only(left: 12, right: 8),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: focused
+                  ? AppColors.purpleLight.withValues(alpha: 0.1)
+                  : widget.fillColor.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.tag_rounded,
+              color: focused ? AppColors.purpleLight : widget.subColor,
+              size: 16,
             ),
           ),
-          const Spacer(),
-          _StepButton(
-            icon: Icons.remove,
-            onTap: () => _bump(-1),
-            isDark: widget.isDark,
+          filled: true,
+          fillColor: widget.fillColor,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
           ),
-          SizedBox(
-            width: 72,
-            child: TextFormField(
-              controller: widget.controller,
-              focusNode: _focus,
-              textAlign: TextAlign.center,
-              keyboardType: TextInputType.number,
-              style: TextStyle(
-                color: widget.textColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 16),
-                hintText: '0',
-              ),
-              validator: widget.validator,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(
+              color: widget.isDark
+                  ? AppColors.white.withValues(alpha: 0.15)
+                  : AppColors.purple.withValues(alpha: 0.12),
+              width: 1.2,
             ),
           ),
-          _StepButton(
-            icon: Icons.add,
-            onTap: () => _bump(1),
-            isDark: widget.isDark,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Text(
-            '주',
-            style: TextStyle(
-              color: widget.subColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: BorderSide(
+              color: widget.isDark
+                  ? AppColors.white.withValues(alpha: 0.12)
+                  : AppColors.purple.withValues(alpha: 0.12),
+              width: 1.2,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool isDark;
-  const _StepButton({
-    required this.icon,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(
-            icon,
-            size: 18,
-            color: isDark ? AppColors.silverBlue : AppColors.lightTextSecondary,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderSide: const BorderSide(
+              color: AppColors.purpleLight,
+              width: 1.5,
+            ),
           ),
         ),
+        validator: widget.validator,
       ),
     );
   }
@@ -1600,13 +1774,13 @@ class _OrderSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: entryPriceCtrl,
-      builder: (_, _, _) {
+      builder: (context, entryPrice, _) {
         return ValueListenableBuilder<TextEditingValue>(
           valueListenable: quantityCtrl,
-          builder: (_, _, _) {
+          builder: (context, quantity, _) {
             return ValueListenableBuilder<TextEditingValue>(
               valueListenable: exitPriceCtrl,
-              builder: (_, _, _) {
+              builder: (context, exitPrice, _) {
                 final ep = _read(entryPriceCtrl);
                 final qty = _readInt(quantityCtrl);
                 final total = ep * qty;
@@ -1617,32 +1791,76 @@ class _OrderSummaryCard extends StatelessWidget {
                 final pnlPct = (showPnl && ep > 0 && qty > 0)
                     ? ((xp - ep) / ep) * 100.0
                     : 0.0;
-                final pnlColor = pnl >= 0 ? AppColors.green : AppColors.red;
+                
+                final isProfit = pnl >= 0;
+                final pnlColor = isProfit ? AppColors.green : AppColors.red;
+                final glowColor = isProfit 
+                    ? AppColors.green.withValues(alpha: 0.08)
+                    : AppColors.red.withValues(alpha: 0.08);
 
-                return Container(
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
                   width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  padding: const EdgeInsets.all(AppSpacing.xl),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.lightBg,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(
-                      color: isDark
-                          ? AppColors.white.withValues(alpha: 0.06)
-                          : AppColors.lightBorder,
-                      width: 1,
+                      color: showPnl && hasValue && xp > 0
+                          ? pnlColor.withValues(alpha: 0.25)
+                          : (isDark
+                              ? AppColors.white.withValues(alpha: 0.06)
+                              : AppColors.lightBorder),
+                      width: showPnl && hasValue && xp > 0 ? 1.5 : 1,
                     ),
+                    boxShadow: showPnl && hasValue && xp > 0
+                        ? [
+                            BoxShadow(
+                              color: glowColor,
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            )
+                          ]
+                        : [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '총 투자금',
-                        style: TextStyle(
-                          color: subColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '총 투자금',
+                            style: TextStyle(
+                              color: subColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          if (hasValue)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.purpleLight.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '$qty주',
+                                style: const TextStyle(
+                                  color: AppColors.purpleLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -1651,23 +1869,23 @@ class _OrderSummaryCard extends StatelessWidget {
                             : formatTradeMoney(0, market),
                         style: TextStyle(
                           color: textColor,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.3,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.4,
                           fontFeatures: const [
                             FontFeature.tabularFigures(),
                           ],
                         ),
                       ),
-                      if (showPnl) ...[
-                        const SizedBox(height: AppSpacing.md),
-                        Divider(
+                      if (showPnl && hasValue && xp > 0) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        Container(
+                          height: 1,
                           color: isDark
                               ? AppColors.white.withValues(alpha: 0.06)
                               : AppColors.lightBorder,
-                          height: 1,
                         ),
-                        const SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.lg),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1676,38 +1894,40 @@ class _OrderSummaryCard extends StatelessWidget {
                               style: TextStyle(
                                 color: subColor,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: 0.2,
                               ),
                             ),
-                            Row(
-                              children: [
-                                Text(
-                                  // formatTradeMoney embeds the negative sign
-                                  // on the number; the leading "+" is added
-                                  // only for non-negative amounts so the
-                                  // positive column reads "+₩10,000" / the
-                                  // negative column reads "₩-10,000".
-                                  '${pnl >= 0 ? '+' : ''}${formatTradeMoney(pnl, market)}',
-                                  style: TextStyle(
-                                    color: pnlColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures(),
-                                    ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: pnlColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    '${pnl >= 0 ? '+' : ''}${formatTradeMoney(pnl, market)}',
+                                    style: TextStyle(
+                                      color: pnlColor,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '(${pnlPct >= 0 ? '+' : ''}${pnlPct.toStringAsFixed(1)}%)',
-                                  style: TextStyle(
-                                    color: pnlColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '(${pnlPct >= 0 ? '+' : ''}${pnlPct.toStringAsFixed(1)}%)',
+                                    style: TextStyle(
+                                      color: pnlColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -1753,6 +1973,7 @@ class _DatePickerRow extends StatelessWidget {
   });
 
   Future<void> _pick(BuildContext context, DateTime current, ValueChanged<DateTime> onPicked) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final picked = await showDatePicker(
       context: context,
       initialDate: current,
@@ -1760,10 +1981,19 @@ class _DatePickerRow extends StatelessWidget {
       lastDate: DateTime.now(),
       builder: (_, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: ColorScheme.dark(
-            primary: AppColors.purpleLight,
-            surface: cardColor,
-          ),
+          colorScheme: isDark
+              ? const ColorScheme.dark(
+                  primary: AppColors.purpleLight,
+                  onPrimary: Colors.white,
+                  surface: AppColors.darkCard,
+                  onSurface: Colors.white,
+                )
+              : const ColorScheme.light(
+                  primary: AppColors.purple,
+                  onPrimary: Colors.white,
+                  surface: Colors.white,
+                  onSurface: AppColors.lightText,
+                ),
         ),
         child: child!,
       ),
@@ -1829,12 +2059,12 @@ class _DateCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: isDark
                   ? AppColors.white.withValues(alpha: 0.06)
@@ -1848,16 +2078,21 @@ class _DateCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.purpleSubtle,
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.purpleLight.withValues(alpha: 0.15),
+                      AppColors.purple.withValues(alpha: 0.05),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.calendar_today_outlined,
+                  Icons.calendar_today_rounded,
                   size: 16,
                   color: AppColors.purpleLight,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1868,16 +2103,16 @@ class _DateCard extends StatelessWidget {
                       style: TextStyle(
                         color: subColor,
                         fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       DateFormat('M월 d일 (E)', 'ko').format(date),
                       style: TextStyle(
                         color: textColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
                         fontFeatures: const [
                           FontFeature.tabularFigures(),
@@ -1887,7 +2122,7 @@ class _DateCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: subColor, size: 18),
+              Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
             ],
           ),
         ),
@@ -1938,10 +2173,6 @@ class _NotesAreaState extends State<_NotesArea> {
   @override
   Widget build(BuildContext context) {
     final focused = _focus.hasFocus;
-    // Focus state controls BOTH border colour and width in one AnimatedContainer,
-    // so the affordance feels coherent. No more Stack/Positioned accent bar:
-    // the previous implementation had the 3px strip overlap the TextFormField's
-    // intrinsic padding and clip the cursor on the first line.
     final unfocusedBorder = widget.isDark
         ? AppColors.white.withValues(alpha: 0.08)
         : AppColors.lightBorder;
@@ -1950,19 +2181,24 @@ class _NotesAreaState extends State<_NotesArea> {
         : unfocusedBorder;
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: widget.cardColor,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: borderColor, width: focused ? 1.5 : 1),
+        boxShadow: focused
+            ? [
+                BoxShadow(
+                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            : [],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row: icon-chip + label. Chip uses the theme's subtle
-          // purple background so it reads as a "type badge" for this note.
-          // Padded in from the border by AppSpacing.xl so the chip never
-          // visually crowds the rounded corner.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
@@ -1977,7 +2213,7 @@ class _NotesAreaState extends State<_NotesArea> {
                   height: 28,
                   decoration: BoxDecoration(
                     color: AppColors.purpleSubtle,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     widget.icon,
@@ -1991,17 +2227,13 @@ class _NotesAreaState extends State<_NotesArea> {
                   style: TextStyle(
                     color: widget.textColor,
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.1,
                   ),
                 ),
               ],
             ),
           ),
-          // Input area: external Padding (xl horizontal) plus internal
-          // contentPadding in the InputDecoration. Together they keep both
-          // the caret and the hint text well inside the rounded border on
-          // every line — nothing crosses or hugs the border.
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
@@ -2016,7 +2248,7 @@ class _NotesAreaState extends State<_NotesArea> {
               style: TextStyle(
                 color: widget.textColor,
                 fontSize: 14,
-                height: 1.55,
+                height: 1.6,
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
@@ -2027,9 +2259,9 @@ class _NotesAreaState extends State<_NotesArea> {
                 ),
                 hintText: '자유롭게 메모를 적어보세요...',
                 hintStyle: TextStyle(
-                  color: widget.subColor.withValues(alpha: 0.7),
+                  color: widget.subColor.withValues(alpha: 0.6),
                   fontSize: 13,
-                  height: 1.55,
+                  height: 1.6,
                 ),
               ),
             ),
@@ -2066,24 +2298,27 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
       },
       onTap: widget.onPressed,
       child: AnimatedScale(
-        scale: _pressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 120),
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
         child: Center(
           child: Container(
             width: context.isMediumOrUp ? 320 : double.infinity,
-            height: 52,
+            height: 54,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.purpleLight, AppColors.purple],
+                colors: [
+                  Color(0xFF8B5CF6),
+                  Color(0xFF6D28D9),
+                ],
               ),
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.25),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFF6D28D9).withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -2092,9 +2327,9 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(
-                    Icons.bolt_rounded,
+                    Icons.check_circle_outline_rounded,
                     color: AppColors.white,
-                    size: 20,
+                    size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
