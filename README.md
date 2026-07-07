@@ -114,11 +114,27 @@ lib/
 scripts/
 ├── UPDATE_SERVICE.md          # 강제 업데이트 장치 운영 가이드
 ├── app-config.example.json    # APP_CONFIG_URL에 올릴 JSON 템플릿
+├── verify_app_config.sh       # 라이브 Pages endpoint + JSON 스키마 검증
 └── fix_emulator_korean_ime.sh # 에뮬레이터 IME 환경설정 헬퍼
 
+docs/                          # GitHub Pages 호스팅 + 스토어 등록 문서
+├── app-config.json            # 강제 업데이트 JSON (라이브 서빙 중)
+├── store-metadata.md          # App Store / Play Store KO+EN 메타데이터
+├── admob-setup.md             # AdMob 실 Unit ID 발급 절차
+└── store-submission-checklist.md # Phase 0~5 출시 체크리스트
+
+assets/branding/               # 앱 아이콘/스플래시 원본 (1장 교체로 전체 재생성)
 test/                          # 100+ 단위/위젯 테스트
 .github/workflows/ci.yml       # PR/push 시 analyze + test
 ```
+
+## 스토어 출시 문서
+
+| 문서 | 용도 |
+|---|---|
+| [`docs/store-metadata.md`](docs/store-metadata.md) | App Store / Play Store 등록 시 사용할 한국어/영어 카피, 키워드, 스크린샷 사양 |
+| [`docs/admob-setup.md`](docs/admob-setup.md) | AdMob 계정 → Unit ID 발급 → dart-define 주입까지 절차 |
+| [`docs/store-submission-checklist.md`](docs/store-submission-checklist.md) | 출시 3주 전부터 직후까지 Phase별 체크리스트 + 심사 거절 대응 |
 
 ## 테스트
 
