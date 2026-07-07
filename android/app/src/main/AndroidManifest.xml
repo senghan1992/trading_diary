@@ -16,7 +16,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
     <application
-        android:label="trading_diary"
+        android:label="매매 일기"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

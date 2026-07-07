@@ -1,6 +1,6 @@
 {
-    "name": "trading_diary",
-    "short_name": "trading_diary",
+    "name": "매매 일기",
+    "short_name": "매매 일기",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
