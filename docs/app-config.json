@@ -1,9 +1,9 @@
 {
   "latest_version": "1.0.0",
   "minimum_version": "1.0.0",
-  "force_update": true,
-  "update_message_ko": "테스트: 보안 취약점이 발견되어 즉시 업데이트가 필요합니다.",
-  "update_message_en": "TEST: Critical security fix required.",
-  "store_url_ios": "https://apps.apple.com/app/id000000000",
+  "force_update": false,
+  "update_message_ko": "주요 종목 검색 기능과 차트가 개선되었어요. 최신 버전으로 업데이트해보세요!",
+  "update_message_en": "Improved stock search and chart. Update to the latest version!",
+  "store_url_ios": "",
   "store_url_android": ""
 }
