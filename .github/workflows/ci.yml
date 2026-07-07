@@ -12,11 +12,11 @@
 
 name: ci
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+# on:
+#   push:
+#     branches: [main]
+#   pull_request:
+#     branches: [main]
 
 # Cancel in-progress runs of the same workflow on the same branch when a
 # new commit lands — saves CI minutes when a developer pushes rapidly.

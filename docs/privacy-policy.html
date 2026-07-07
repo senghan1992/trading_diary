@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>개인정보 처리방침 / Privacy Policy - Trading Diary</title>
+  <style>
+    :root {
+      --primary: #7132f5;
+      --primary-dark: #5741d8;
+      --text-main: #101114;
+      --text-muted: #686b82;
+      --bg-surface: #ffffff;
+      --bg-body: #f8f9fa;
+      --border-color: #dedee5;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-main);
+      background-color: var(--bg-body);
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background-color: var(--bg-surface);
+      border-radius: 12px;
+      box-shadow: rgba(0, 0, 0, 0.03) 0px 4px 24px;
+      border: 1px solid var(--border-color);
+    }
+
+    header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .lang-switcher button {
+      background-color: var(--bg-body);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+
+    .lang-switcher button:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .lang-section {
+      display: none;
+    }
+
+    .lang-section.active {
+      display: block;
+    }
+
+    h2 {
+      color: var(--primary-dark);
+      font-size: 18px;
+      margin-top: 30px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    p, li {
+      color: var(--text-main);
+      font-size: 15px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .footer-text {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      font-size: 13px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        margin: 10px;
+        padding: 20px;
+      }
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1 id="page-title">개인정보 처리방침 / Privacy Policy</h1>
+      <div class="lang-switcher">
+        <button onclick="switchLang('ko')">한국어</button>
+        <button onclick="switchLang('en')">English</button>
+      </div>
+    </header>
+
+    <!-- 한국어 개인정보 처리방침 -->
+    <div id="section-ko" class="lang-section active">
+      <p>본 개인정보 처리방침은 <strong>Trading Diary</strong>(이하 "앱")가 사용자의 정보를 수집, 이용 및 보호하는 방법을 설명합니다.</p>
+      
+      <h2>1. 개인정보의 수집 및 이용 목적</h2>
+      <p>본 앱은 원칙적으로 사용자의 매매 일지 데이터를 수집하여 외부 서버로 전송하지 않습니다. 모든 매매 데이터(종목, 매매가, 수량, 일지 내용 등)는 사용자의 <strong>기기 내 로컬 저장소(Hive 데이터베이스)에만 저장</strong>됩니다. 계정 등록이나 로그인이 필요하지 않으므로 사용자의 식별 가능한 개인정보를 서버에 저장하지 않습니다.</p>
+
+      <h2>2. 광고 및 서드파티 서비스 이용</h2>
+      <p>본 앱은 무료 서비스 제공 및 광고 게재를 위해 Google AdMob을 사용합니다. 이 과정에서 구글 및 서드파티 광고 네트워크가 맞춤형 광고를 제공하거나 사용 패턴 분석을 위해 아래와 같은 정보를 수집할 수 있습니다:</p>
+      <ul>
+        <li>기기 식별자 및 광고 ID (IDFA, GAID 등)</li>
+        <li>앱 내의 광고 상호작용 데이터 (클릭, 노출 등)</li>
+      </ul>
+      <p>iOS 사용자의 경우 앱 최초 실행 시 광고 추적 허용 여부를 선택할 수 있으며, 기기 설정을 통해 언제든지 맞춤형 광고 수신을 거부할 수 있습니다.</p>
+
+      <h2>3. 푸시 알림 및 로컬 리마인더</h2>
+      <p>본 앱은 사용자가 설정한 복습 시간을 리마인드하기 위해 로컬 알림(Local Notification) 기능을 사용합니다. 이 알림은 기기 자체에서 예약되어 발송되며, 어떠한 정보도 외부로 전송되지 않습니다.</p>
+
+      <h2>4. 정보의 안전성 확보 조치</h2>
+      <p>앱에 입력된 모든 정보는 기기 내부의 보안 영역에 저장되며, 사용자가 앱을 삭제할 경우 로컬 데이터베이스의 정보 역시 즉시 영구적으로 삭제됩니다. 데이터 보안을 위해 기기 분실에 유의하시기 바랍니다.</p>
+
+      <h2>5. 개인정보 처리방침의 변경</h2>
+      <p>본 개인정보 처리방침은 정책 또는 관련 법령의 변경에 따라 수정될 수 있습니다. 중요한 변경 사항이 있을 경우 앱 내 공지사항 또는 업데이트 노트를 통해 알려드립니다.</p>
+
+      <h2>6. 문의 처</h2>
+      <p>본 방침이나 앱 이용과 관련된 문의사항은 개발자 지원 이메일 또는 이슈 트래커를 통해 문의해 주시기 바랍니다.</p>
+      
+      <p class="footer-text">시행일자: 2026년 7월 7일</p>
+    </div>
+
+    <!-- 영어 개인정보 처리방침 (English Privacy Policy) -->
+    <div id="section-en" class="lang-section">
+      <p>This Privacy Policy explains how <strong>Trading Diary</strong> (hereinafter "the App") collects, uses, and protects your information.</p>
+      
+      <h2>1. Collection and Use of Personal Information</h2>
+      <p>In principle, the App does not collect or transmit your trading log data to external servers. All trading data (stock names, purchase/sale prices, quantities, notes, etc.) is stored <strong>only in the local storage (Hive database) within your device</strong>. No account registration or login is required, so we do not store any of your personally identifiable information on our servers.</p>
+
+      <h2>2. Advertisements and Third-Party Services</h2>
+      <p>The App uses Google AdMob to provide free services and display advertisements. In this process, Google and third-party ad networks may collect the following information to serve personalized ads or analyze usage patterns:</p>
+      <ul>
+        <li>Device identifiers and advertising IDs (e.g., IDFA, GAID)</li>
+        <li>Ad interaction data within the App (clicks, impressions, etc.)</li>
+      </ul>
+      <p>iOS users can choose whether to allow tracking when the app is launched for the first time, and can opt out of personalized ads at any time through their device settings.</p>
+
+      <h2>3. Push Notifications and Local Reminders</h2>
+      <p>The App uses local notifications to remind you of the review times you have set. These notifications are scheduled and sent directly by the device, and no information is transmitted externally.</p>
+
+      <h2>4. Information Security Measures</h2>
+      <p>All information entered into the App is stored in the secure area inside your device. If you delete the App, the information in the local database will also be permanently deleted immediately. Please be mindful of device security.</p>
+
+      <h2>5. Changes to the Privacy Policy</h2>
+      <p>This Privacy Policy may be updated to reflect changes in policies or relevant laws. Any significant changes will be announced through in-app notices or update notes.</p>
+
+      <h2>6. Contact Us</h2>
+      <p>If you have any questions regarding this policy or the use of the App, please contact us through the developer support email or issue tracker.</p>
+      
+      <p class="footer-text">Effective Date: July 7, 2026</p>
+    </div>
+  </div>
+
+  <script>
+    // 브라우저 기본 언어 감지하여 초기 표시 언어 결정
+    document.addEventListener("DOMContentLoaded", function() {
+      const userLang = navigator.language || navigator.userLanguage;
+      if (userLang.startsWith("ko")) {
+        switchLang("ko");
+      } else {
+        switchLang("en");
+      }
+    });
+
+    function switchLang(lang) {
+      document.querySelectorAll('.lang-section').forEach(el => el.classList.remove('active'));
+      if (lang === 'ko') {
+        document.getElementById('section-ko').classList.add('active');
+        document.getElementById('page-title').innerText = "개인정보 처리방침";
+      } else {
+        document.getElementById('section-en').classList.add('active');
+        document.getElementById('page-title').innerText = "Privacy Policy";
+      }
+    }
+  </script>
+</body>
+</html>
