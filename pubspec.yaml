@@ -34,7 +34,46 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   mocktail: ^1.0.4
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
   generate: true
+  assets:
+    - assets/branding/
+
+# ---------------------------------------------------------------------------
+# App icon
+# ---------------------------------------------------------------------------
+# Generates every per-platform launcher icon from a single 1024×1024 source
+# PNG. Replace assets/branding/app_icon.png with your final design and rerun
+# `dart run flutter_launcher_icons`. For Android 8+ adaptive icons the
+# foreground layer (logo on transparent background) is composed over the
+# brand-color background so the OS can mask the icon in any shape.
+flutter_launcher_icons:
+  image_path: "assets/branding/app_icon.png"
+  ios: true
+  android: true
+  web:
+    generate: false  # web favicon is generated separately if needed
+  remove_alpha_ios: true
+  adaptive_icon_background: "#7132f5"
+  adaptive_icon_foreground: "assets/branding/app_icon_foreground.png"
+
+# ---------------------------------------------------------------------------
+# Native splash
+# ---------------------------------------------------------------------------
+# Generates the Android 12+ splash theme and the iOS launch storyboard from
+# the same source image. Both light and dark variants are wired up so the
+# splash follows the system theme.
+flutter_native_splash:
+  color: "#ffffff"
+  color_dark: "#101114"
+  image: "assets/branding/splash_logo.png"
+  image_dark: "assets/branding/splash_logo_dark.png"
+  android_12:
+    color: "#ffffff"
+    color_dark: "#101114"
+    image: "assets/branding/splash_logo.png"
+    image_dark: "assets/branding/splash_logo_dark.png"
