@@ -1072,23 +1072,21 @@ class _NumberedSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = isDark ? AppColors.purpleLight : AppColors.purple;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.purpleSubtle.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              index,
-              style: const TextStyle(
-                color: AppColors.purple,
-                fontWeight: FontWeight.w900,
-                fontSize: 11,
-              ),
+          Text(
+            index,
+            style: TextStyle(
+              color: primaryColor,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(width: 8),
@@ -1426,6 +1424,8 @@ class _SegmentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? AppColors.purpleLight : AppColors.purple;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1440,7 +1440,7 @@ class _SegmentItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: active
                 ? Border.all(
-                    color: AppColors.purpleLight.withValues(alpha: 0.15),
+                    color: activeColor.withValues(alpha: 0.15),
                     width: 1,
                   )
                 : null,
@@ -1461,13 +1461,13 @@ class _SegmentItem extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: active ? AppColors.purpleLight : subColor.withValues(alpha: 0.8),
+                  color: active ? activeColor : subColor.withValues(alpha: 0.8),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    color: active ? AppColors.purpleLight : subColor.withValues(alpha: 0.8),
+                    color: active ? activeColor : subColor.withValues(alpha: 0.8),
                     fontSize: 13,
                     fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -2086,10 +2086,10 @@ class _DateCard extends StatelessWidget {
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.calendar_today_rounded,
                   size: 16,
-                  color: AppColors.purpleLight,
+                  color: isDark ? AppColors.purpleLight : AppColors.purple,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -2173,11 +2173,12 @@ class _NotesAreaState extends State<_NotesArea> {
   @override
   Widget build(BuildContext context) {
     final focused = _focus.hasFocus;
+    final activeColor = widget.isDark ? AppColors.purpleLight : AppColors.purple;
     final unfocusedBorder = widget.isDark
         ? AppColors.white.withValues(alpha: 0.08)
         : AppColors.lightBorder;
     final borderColor = focused
-        ? AppColors.purpleLight.withValues(alpha: 0.6)
+        ? activeColor.withValues(alpha: 0.6)
         : unfocusedBorder;
 
     return AnimatedContainer(
@@ -2218,7 +2219,7 @@ class _NotesAreaState extends State<_NotesArea> {
                   child: Icon(
                     widget.icon,
                     size: 14,
-                    color: AppColors.purpleLight,
+                    color: widget.isDark ? AppColors.purpleLight : AppColors.purple,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
@@ -2286,6 +2287,8 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTapDown: (_) {
         if (mounted) setState(() => _pressed = true);
@@ -2305,18 +2308,18 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
             width: context.isMediumOrUp ? 320 : double.infinity,
             height: 54,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF8B5CF6),
-                  Color(0xFF6D28D9),
+                  AppColors.purple,
+                  AppColors.purpleDark,
                 ],
               ),
               borderRadius: BorderRadius.circular(AppRadius.lg),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF6D28D9).withValues(alpha: 0.35),
+                  color: AppColors.purpleDark.withValues(alpha: isDark ? 0.4 : 0.2),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),

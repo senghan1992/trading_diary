@@ -1256,7 +1256,15 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> with SingleTicker
                   },
                 );
                 if (picked != null) {
-                  setState(() => selectedDate = picked);
+                  setState(() {
+                    selectedDate = DateTime(
+                      picked.year,
+                      picked.month,
+                      picked.day,
+                      selectedDate.hour,
+                      selectedDate.minute,
+                    );
+                  });
                 }
               },
               child: Container(
@@ -1270,6 +1278,68 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> with SingleTicker
                     Icon(Icons.calendar_today, color: AppColors.orange, size: 18),
                     const SizedBox(width: 12),
                     Text(DateFormat('yyyy-MM-dd').format(selectedDate), style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
+                    const Spacer(),
+                    Icon(Icons.chevron_right, color: subColor),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final picked = await showTimePicker(
+                  context: ctx,
+                  initialTime: TimeOfDay.fromDateTime(selectedDate),
+                  builder: (pickerCtx, child) {
+                    final parentTheme = Theme.of(pickerCtx);
+                    return Theme(
+                      data: parentTheme.copyWith(
+                        colorScheme: parentTheme.brightness == Brightness.dark
+                          ? ColorScheme.dark(
+                              primary: AppColors.purple,
+                              onPrimary: Colors.white,
+                              surface: AppColors.darkCard,
+                              onSurface: AppColors.white,
+                            )
+                          : ColorScheme.light(
+                              primary: AppColors.purple,
+                              onPrimary: Colors.white,
+                              surface: Colors.white,
+                              onSurface: AppColors.lightText,
+                            ),
+                        dialogTheme: DialogThemeData(
+                          backgroundColor: parentTheme.brightness == Brightness.dark
+                            ? AppColors.darkCard
+                            : Colors.white,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (picked != null) {
+                  setState(() {
+                    selectedDate = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      picked.hour,
+                      picked.minute,
+                    );
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkBg : AppColors.lightBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, color: AppColors.orange, size: 18),
+                    const SizedBox(width: 12),
+                    Text(DateFormat('HH:mm').format(selectedDate), style: TextStyle(color: textColor, fontWeight: FontWeight.w500)),
                     const Spacer(),
                     Icon(Icons.chevron_right, color: subColor),
                   ],
@@ -1301,7 +1371,7 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> with SingleTicker
                         children: [
                           const Icon(Icons.notifications_active, color: Colors.white, size: 18),
                           const SizedBox(width: 8),
-                          Text(l10n.reminderSetFormat(DateFormat('M월 d일').format(selectedDate))),
+                          Text(l10n.reminderSetFormat(DateFormat('M월 d일 HH:mm').format(selectedDate))),
                         ],
                       ),
                       backgroundColor: AppColors.green,
@@ -1354,7 +1424,7 @@ class _TradeDetailScreenState extends State<TradeDetailScreen> with SingleTicker
                   children: [
                     Icon(Icons.schedule, size: 12, color: isPast ? AppColors.red : subColor),
                     const SizedBox(width: 4),
-                    Text(DateFormat('yyyy-MM-dd').format(reminder.remindAt), style: TextStyle(color: isPast ? AppColors.red : subColor, fontSize: 11)),
+                    Text(DateFormat('yyyy-MM-dd HH:mm').format(reminder.remindAt), style: TextStyle(color: isPast ? AppColors.red : subColor, fontSize: 11)),
                     if (isPast) ...[
                       const SizedBox(width: 6),
                       Container(

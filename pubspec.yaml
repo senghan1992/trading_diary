@@ -58,7 +58,7 @@ flutter_launcher_icons:
   web:
     generate: false  # web favicon is generated separately if needed
   remove_alpha_ios: true
-  adaptive_icon_background: "#7132f5"
+  adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: "assets/branding/app_icon_foreground.png"
 
 # ---------------------------------------------------------------------------

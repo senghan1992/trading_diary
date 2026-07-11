@@ -85,10 +85,10 @@ class HomeScreen extends StatelessWidget {
       portfolioMarket = inferMarketFromSymbol(closed.first.stockSymbol);
     }
 
-    // Modern Deep Gradient Theme
+    // Modern Deep Gradient Theme using Slate Charcoal
     final List<Color> gradientColors = isDark
-        ? [const Color(0xFF2E1A47), const Color(0xFF1E1B4B)] // Deep Violet-Navy
-        : [const Color(0xFF6D28D9), const Color(0xFF4F46E5)]; // Rich Violet-Indigo
+        ? [AppColors.purpleDark, AppColors.darkSurface] // Slate Dark to Surface Dark
+        : [AppColors.purple, AppColors.purpleDark]; // Slate Charcoal to Slate Dark
 
     final textPrimaryColor = Colors.white;
     final textSecondaryColor = Colors.white.withValues(alpha: 0.7);
@@ -108,7 +108,7 @@ class HomeScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : const Color(0xFF4F46E5)).withValues(alpha: isDark ? 0.4 : 0.2),
+            color: (isDark ? Colors.black : AppColors.purple).withValues(alpha: isDark ? 0.4 : 0.2),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),

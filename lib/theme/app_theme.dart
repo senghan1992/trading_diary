@@ -19,10 +19,10 @@ class AppRadius {
 }
 
 class AppColors {
-  static const purple = Color(0xFF6D28D9);
-  static const purpleLight = Color(0xFF8B5CF6);
-  static const purpleDark = Color(0xFF5B21B6);
-  static const purpleSubtle = Color(0x1A8B5CF6);
+  static const purple = Color(0xFF1E293B);
+  static const purpleLight = Color(0xFFE2E8F0);
+  static const purpleDark = Color(0xFF0F172A);
+  static const purpleSubtle = Color(0x0F1E293B);
 
   static const nearBlack = Color(0xFF0F1115);
   static const coolGray = Color(0xFF686B82);
