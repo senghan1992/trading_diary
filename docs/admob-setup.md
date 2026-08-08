@@ -177,6 +177,8 @@ static const String bannerAdUnitId = String.fromEnvironment(
 
 ---
 
+**app-ads.txt 호스팅**: `web/app-ads.txt` 에 Publisher ID 한 줄을 둬 GitHub Pages 루트에 자동 배포됨. Play Console Website와 도메인이 일치해야 AdMob이 인증함.
+
 ## 10. 도움말
 
 - AdMob 공식 가이드: https://support.google.com/admob

@@ -30,6 +30,7 @@ App Store / Play Store 첫 출시 시 자주 막히는 곳과 그 대응. 이 �
   - 또는 도메인 구매 + 호스팅 (Cloudflare Pages 무료 티어)
 - [ ] **Support URL** 확보 (이슈 트래커, 이메일 폼 등)
 - [ ] 마케팅 URL (선택)
+- [ ] `web/app-ads.txt` 생성 + Play Console Website 일치 확인.
 
 ---
 
