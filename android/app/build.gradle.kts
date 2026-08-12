@@ -11,7 +11,7 @@ android {
     // (must match the package name registered in Google Play Console).
     // Example: namespace = "com.yourcompany.tradingdiary"
     // Apple and Google both REJECT `com.example.*` namespace in store submissions.
-    namespace = "com.yourcompany.tradingdiary"
+    namespace = "com.senghan1992.tradingdiary"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,7 @@ android {
         // as the `namespace` above (the two values must stay in sync).
         // Google Play treats this as the unique package identifier and will refuse
         // release builds with `com.example.*`.
-        applicationId = "com.yourcompany.tradingdiary"
+        applicationId = "com.senghan1992.tradingdiary"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -75,6 +75,10 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

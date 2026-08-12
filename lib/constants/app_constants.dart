@@ -61,6 +61,6 @@ class AppConstants {
   /// store listing once it's published.
   static const String androidPackageName = String.fromEnvironment(
     'ANDROID_PACKAGE_NAME',
-    defaultValue: 'com.yourcompany.tradingdiary',
+    defaultValue: 'com.senghan1992.tradingdiary',
   );
 }

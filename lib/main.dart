@@ -200,6 +200,7 @@ class TradingDiaryApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
+            builder: (context, child) => SystemBarInsetGuard(child: child!),
             home: const AppGate(),
           );
         },
@@ -378,6 +379,27 @@ class _MainShellState extends State<MainShell> {
               child: navBar,
             )
           : null,
+    );
+  }
+}
+
+/// Consumes the system bar insets (navigation bar on Android, home
+/// indicator on iOS) once at the app root so no screen, pushed route, or
+/// bottom sheet ever draws underneath them. Top is left untouched:
+/// AppBars already handle the status bar inset themselves.
+class SystemBarInsetGuard extends StatelessWidget {
+  const SystemBarInsetGuard({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: SafeArea(
+        top: false,
+        child: child,
+      ),
     );
   }
 }
