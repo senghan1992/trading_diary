@@ -4,6 +4,10 @@
    <FileRef
       location = "group:Runner.xcodeproj">
    </FileRef>
+   <Group
+      location = "group:Flutter"
+      name = "Flutter">
+   </Group>
    <FileRef
       location = "group:Pods/Pods.xcodeproj">
    </FileRef>
