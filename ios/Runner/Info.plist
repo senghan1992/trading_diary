@@ -49,7 +49,7 @@
 			</dict>
 		</array>
 		<key>NSUserTrackingUsageDescription</key>
-		<string>This app uses tracking to provide personalized ads and improve your experience.</string>
+		<string>개인 맞춤형 광고 제공 및 서비스 개선을 위해 기기 식별 정보를 사용합니다.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

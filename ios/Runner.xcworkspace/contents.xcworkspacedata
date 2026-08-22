@@ -8,7 +8,4 @@
       location = "group:Flutter"
       name = "Flutter">
    </Group>
-   <FileRef
-      location = "group:Pods/Pods.xcodeproj">
-   </FileRef>
 </Workspace>
