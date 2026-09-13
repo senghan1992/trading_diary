@@ -2,22 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 
+/// App-wide up/down color convention AND light/dark theme mode.
+///
+/// [ThemeMode] (system / light / dark) is persisted under `app_theme_mode`
+/// and consumed by `MaterialApp.themeMode` in main.dart. The Korean
+/// (red-up/blue-down) vs Western (green-up/red-down) price color mode is
+/// essential for Korean investors and is kept alongside it.
 class ThemeProvider extends ChangeNotifier {
-  static const String _themeKey = 'app_theme_mode';
   static const String _colorKey = 'app_color_mode';
-  bool _isDarkMode = true;
+  static const String _themeModeKey = 'app_theme_mode';
+  ThemeMode _themeMode = ThemeMode.system;
   bool _useKoreanColors = _detectKoreanFromLocale();
 
-  bool get isDarkMode => _isDarkMode;
+  ThemeMode get themeMode => _themeMode;
   bool get useKoreanColors => _useKoreanColors;
   bool get isWesternColors => !_useKoreanColors;
-
   Color get upColor => _useKoreanColors ? AppColors.red : AppColors.green;
   Color get downColor => _useKoreanColors ? AppColors.blue : AppColors.red;
   Color get upBg => _useKoreanColors ? AppColors.redBg : AppColors.greenBg;
   Color get downBg => _useKoreanColors ? AppColors.blueBg : AppColors.redBg;
 
+  /// Resolves the effective brightness for the current [themeMode].
+  Brightness get resolvedBrightness {
+    switch (_themeMode) {
+      case ThemeMode.light:
+        return Brightness.light;
+      case ThemeMode.dark:
+        return Brightness.dark;
+      case ThemeMode.system:
+        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    }
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    // Synchronously update AppColors brightness BEFORE notifying listeners so
+    // widgets rebuilding on this notification immediately read the new palette.
+    AppColors.setBrightness(resolvedBrightness);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.name);
+  }
+
   ThemeProvider() {
+    AppColors.setBrightness(resolvedBrightness);
     _loadPrefs();
   }
 
@@ -41,7 +69,6 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> _loadPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    _isDarkMode = prefs.getBool(_themeKey) ?? true;
     // Only overwrite if the user has explicitly chosen before. A `null`
     // value means "first launch on this device" — keep the locale-derived
     // default so a Korean device first-launches in Korean colors, an
@@ -50,20 +77,15 @@ class ThemeProvider extends ChangeNotifier {
     if (savedColor != null) {
       _useKoreanColors = savedColor;
     }
-    notifyListeners();
-  }
-
-  Future<void> toggleTheme() async {
-    _isDarkMode = !_isDarkMode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, _isDarkMode);
-    notifyListeners();
-  }
-
-  Future<void> setDarkMode(bool value) async {
-    _isDarkMode = value;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, value);
+    final savedMode = prefs.getString(_themeModeKey);
+    if (savedMode != null) {
+      _themeMode = switch (savedMode) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+      AppColors.setBrightness(resolvedBrightness);
+    }
     notifyListeners();
   }
 

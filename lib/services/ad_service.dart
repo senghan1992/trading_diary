@@ -94,8 +94,15 @@ class AdService {
   /// to balance monetization with user experience.
   static const int _showAdEveryNEntries = 5;
 
-  /// Initializes the Mobile Ads SDK and requests ATT permission on iOS.
-  /// Safe to call multiple times - subsequent calls are no-ops.
+  /// Initializes the Mobile Ads SDK. Safe to call multiple times - subsequent
+  /// calls are no-ops.
+  ///
+  /// The iOS ATT (App Tracking Transparency) prompt is intentionally NOT
+  /// requested here. Calling it before the first frame is mounted is unsafe
+  /// on iOS - the system prompt is silently dropped or fails to display when
+  /// no UI window is attached. Call [requestTrackingPermission] from a
+  /// post-frame callback (e.g. inside the root widget's
+  /// `addPostFrameCallback`) instead. The call is idempotent.
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
@@ -106,14 +113,31 @@ class AdService {
     _entriesSinceLastAd = LocalStorageService.getAdInterstitialCounter();
 
     await MobileAds.instance.initialize();
-
-    if (!kIsWeb && Platform.isIOS) {
-      // Show the system tracking prompt. The Info.plist key
-      // NSUserTrackingUsageDescription is required for this to display.
-      await AppTrackingTransparency.requestTrackingAuthorization();
-    }
+    debugPrint('AdService: MobileAds SDK initialized');
 
     _loadInterstitial();
+  }
+
+  /// Requests iOS App Tracking Transparency authorization. Idempotent and
+  /// safe to call from a post-frame callback once the root widget tree is
+  /// mounted. Returns the raw [TrackingStatus] from the OS so callers can
+  /// inspect the result; on non-iOS platforms returns
+  /// [TrackingStatus.notSupported].
+  ///
+  /// The Info.plist key `NSUserTrackingUsageDescription` is required for the
+  /// system prompt to display.
+  Future<TrackingStatus> requestTrackingPermission() async {
+    if (!_initialized) {
+      // Defensive: if a caller forgot to await init() first, we still
+      // initialize so the ATT request lands on a fully booted SDK.
+      await init();
+    }
+    if (kIsWeb || !Platform.isIOS) {
+      return TrackingStatus.notSupported;
+    }
+    final status = await AppTrackingTransparency.requestTrackingAuthorization();
+    debugPrint('AdService: ATT status=$status');
+    return status;
   }
 
   void _loadInterstitial() {

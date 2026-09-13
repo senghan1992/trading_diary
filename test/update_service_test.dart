@@ -24,8 +24,10 @@ void main() {
       expect(config.messageKo, '한국어 메시지');
       expect(config.messageEn, 'English message');
       expect(config.storeUrlIos, 'https://apps.apple.com/app/id111');
-      expect(config.storeUrlAndroid,
-          'https://play.google.com/store/apps/details?id=x');
+      expect(
+        config.storeUrlAndroid,
+        'https://play.google.com/store/apps/details?id=x',
+      );
     });
 
     test('applies safe defaults when fields are missing', () {
@@ -100,14 +102,12 @@ void main() {
     }
 
     test('current < minimum → required', () {
-      final status =
-          UpdateService.instance.checkStatus(cfg(), '0.9.0');
+      final status = UpdateService.instance.checkStatus(cfg(), '0.9.0');
       expect(status, UpdateStatus.required);
     });
 
     test('current == minimum → not required', () {
-      final status =
-          UpdateService.instance.checkStatus(cfg(), '1.0.0');
+      final status = UpdateService.instance.checkStatus(cfg(), '1.0.0');
       expect(status, isNot(UpdateStatus.required));
     });
 
@@ -120,31 +120,32 @@ void main() {
     });
 
     test('current < latest (but >= minimum) → optional', () {
-      final status =
-          UpdateService.instance.checkStatus(cfg(), '1.1.0');
+      final status = UpdateService.instance.checkStatus(cfg(), '1.1.0');
       expect(status, UpdateStatus.optional);
     });
 
     test('current == latest → upToDate', () {
-      final status =
-          UpdateService.instance.checkStatus(cfg(), '1.2.0');
+      final status = UpdateService.instance.checkStatus(cfg(), '1.2.0');
       expect(status, UpdateStatus.upToDate);
     });
 
     test('current > latest → upToDate (no downgrade)', () {
-      final status =
-          UpdateService.instance.checkStatus(cfg(), '2.0.0');
+      final status = UpdateService.instance.checkStatus(cfg(), '2.0.0');
       expect(status, UpdateStatus.upToDate);
     });
 
     test('semver ordering is numeric, not lexical', () {
       // Lexical compare would say "1.10.0" < "1.2.0" which is wrong.
-      final status =
-          UpdateService.instance.checkStatus(cfg(latest: '1.10.0'), '1.2.0');
+      final status = UpdateService.instance.checkStatus(
+        cfg(latest: '1.10.0'),
+        '1.2.0',
+      );
       expect(status, UpdateStatus.optional);
 
-      final newerStatus =
-          UpdateService.instance.checkStatus(cfg(latest: '1.2.0'), '1.10.0');
+      final newerStatus = UpdateService.instance.checkStatus(
+        cfg(latest: '1.2.0'),
+        '1.10.0',
+      );
       expect(newerStatus, UpdateStatus.upToDate);
     });
 

@@ -27,6 +27,12 @@ migrate_working_dir/
 # leak between machines and developers).
 .codegraph
 .omo/
+.pi/
+.claude/
+.agent/
+.codex/
+.grok/
+.impeccable/
 
 # Flutter/Dart/Pub related
 **/doc/api/

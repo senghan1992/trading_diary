@@ -177,7 +177,7 @@ static const String bannerAdUnitId = String.fromEnvironment(
 
 ---
 
-**app-ads.txt 호스팅**: `web/app-ads.txt` 에 Publisher ID 한 줄을 둬 GitHub Pages 루트에 자동 배포됨. Play Console Website와 도메인이 일치해야 AdMob이 인증함.
+**app-ads.txt 호스팅**: `docs/app-ads.txt` 가 GitHub Pages `/trading_diary/` 하위 경로에 자동 배포됨. AdMob/Play Console의 **웹사이트 URL**을 `https://<user>.github.io/trading_diary/` 로 등록해야 AdMob 크롤러가 파일을 찾을 수 있음. 루트 도메인(`https://<user>.github.io/`)은 별도 개인 사이트가 점유 중일 수 있으므로 사용 금지.
 
 ## 10. 도움말
 

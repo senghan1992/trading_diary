@@ -114,7 +114,6 @@ flutter build appbundle --release \
 - [ ] 시뮬레이터 부팅 정상
 - [ ] **광고 실제 노출** (테스트 ID 아닌 실 Unit ID로 빌드했을 때)
 - [ ] 거래 5건 저장 시 전면 광고 표시
-- [ ] 알림 권한 요청 다이얼로그 정상
 - [ ] ATT (iOS) 다이얼로그 정상
 - [ ] `UpdateService` — Pages URL에서 JSON 정상 fetch
 - [ ] **버전 1.0.0 = latest 1.0.0 → 업데이트 다이얼로그 없음**

@@ -11,11 +11,7 @@ import '../services/update_service.dart';
 /// the dialog but can tap "Later" to dismiss it for the rest of the
 /// session.
 class UpdateDialog extends StatelessWidget {
-  const UpdateDialog({
-    super.key,
-    required this.required,
-    this.message,
-  });
+  const UpdateDialog({super.key, required this.required, this.message});
 
   final bool required;
   final String? message;
@@ -41,8 +37,9 @@ class UpdateDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    final title =
-        required ? l10n.updateRequiredTitle : l10n.updateAvailableTitle;
+    final title = required
+        ? l10n.updateRequiredTitle
+        : l10n.updateAvailableTitle;
     final body = (message != null && message!.isNotEmpty)
         ? message!
         : l10n.updateDefaultBody;

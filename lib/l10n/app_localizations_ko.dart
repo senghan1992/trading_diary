@@ -18,9 +18,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get review => '복습';
 
   @override
-  String get searchPlaceholder => '종목명 또는 코드로 검색';
-
-  @override
   String get resultFilter => '결과';
 
   @override
@@ -63,9 +60,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get winRate => '수익 비율';
 
   @override
-  String get marketIndices => '시장 지수';
-
-  @override
   String get recentTrades => '최근 거래';
 
   @override
@@ -76,12 +70,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noTradesYet => '거래 내역이 없습니다. 일지를 작성해보세요!';
-
-  @override
-  String get reminders => '알림';
-
-  @override
-  String get noPendingReminders => '대기 중인 알림 없음';
 
   @override
   String get learning => '학습';
@@ -195,9 +183,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get english => '영어';
 
   @override
-  String get theme => '테마';
-
-  @override
   String get dark => '다크';
 
   @override
@@ -208,15 +193,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get displaySubtitle => '화면 모드와 색상 설정';
-
-  @override
-  String get screenMode => '화면 모드';
-
-  @override
-  String get darkMode => '다크 모드';
-
-  @override
-  String get lightMode => '라이트 모드';
 
   @override
   String get priceColors => '가격 색상';
@@ -318,30 +294,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get whatILearned => '배운 점';
 
   @override
-  String get search => '검색';
-
-  @override
-  String get noResults => '결과 없음';
-
-  @override
-  String get kospi => 'KOSPI';
-
-  @override
-  String get kosdaq => 'KOSDAQ';
-
-  @override
-  String get nasdaq => 'NASDAQ';
-
-  @override
-  String get sp500 => 'S&P 500';
-
-  @override
-  String get dowJones => '다우 존스';
-
-  @override
-  String get lastUpdated => '마지막 업데이트';
-
-  @override
   String get error => '오류';
 
   @override
@@ -360,43 +312,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get position => '포지션';
 
   @override
-  String get positionEntry => '포지션 진입';
-
-  @override
-  String get positionClose => '포지션 청산';
-
-  @override
   String get openPosition => '진행중';
 
   @override
   String get closedPosition => '매도완료';
 
   @override
-  String get currentPrice => '현재가';
-
-  @override
-  String get unrealizedPL => '미실현 손익';
-
-  @override
   String get marketValue => '시장가치';
-
-  @override
-  String get holdings => '보유';
 
   @override
   String get addPosition => '진입 기록하기';
 
   @override
   String get closePosition => '청산 기록하기';
-
-  @override
-  String get simulate => '시뮬레이션';
-
-  @override
-  String get trackPosition => '트래킹';
-
-  @override
-  String get updatePosition => '포지션 수정';
 
   @override
   String get entryOnly => '매수만';
@@ -415,53 +343,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get addAnalysisNote => '분석 메모 추가';
-
-  @override
-  String get reminderTitle => '알림 제목';
-
-  @override
-  String get reminderNote => '알림 메모';
-
-  @override
-  String get reminderDate => '알림 날짜';
-
-  @override
-  String get setReminder => '알림 설정';
-
-  @override
-  String get reminderFor => '리마인드';
-
-  @override
-  String get deleteReminder => '알림 삭제';
-
-  @override
-  String get deleteReminderConfirm => '이 알림을 삭제할까요? 더 이상 발송되지 않습니다.';
-
-  @override
-  String get notifications => '알림';
-
-  @override
-  String get notificationsSubtitle => '거래 리마인드 및 복습 알림';
-
-  @override
-  String get notificationsEnabled => '알림 활성화';
-
-  @override
-  String get notificationsEnabledSubtitle => '거래, 복습, 포지션에 대한 알림을 받습니다';
-
-  @override
-  String get notificationsPermissionDenied => '알림 권한이 꺼져 있습니다. 눌러서 설정으로 이동하세요.';
-
-  @override
-  String get notificationsOpenSettings => '설정 열기';
-
-  @override
-  String get notificationsReschedule => '대기 중인 알림 재등록';
-
-  @override
-  String notificationsRescheduleDone(int count) {
-    return '알림 $count개가 등록되었습니다';
-  }
 
   @override
   String get tabOverview => '개요';
@@ -618,51 +499,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get writtenNotes => '작성한 기록';
 
   @override
-  String get setRemindersLabel => '설정된 알림';
-
-  @override
-  String get noRemindersSet => '아직 설정된 알림이 없습니다';
-
-  @override
-  String get newReminderHeader => '새 알림 설정';
-
-  @override
-  String get reminderTitleHint => '알림 제목 (예: 3일 후 종목 재확인)';
-
-  @override
-  String get reminderNoteHint => '메모 (선택사항)';
-
-  @override
-  String get enterReminderTitle => '알림 제목을 입력하세요';
-
-  @override
-  String reminderSetFormat(String date) {
-    return '$date 알림이 설정되었습니다';
-  }
-
-  @override
-  String get reminderOverdue => '지남';
-
-  @override
   String get emptyOpenPositions => '진행중인 포지션이 없습니다';
 
   @override
   String get emptyClosedTrades => '완료된 거래가 없습니다';
-
-  @override
-  String get snoozeOneDay => '1일 연기';
-
-  @override
-  String get snoozeOneWeek => '1주 연기';
-
-  @override
-  String get snoozeOneMonth => '1달 연기';
-
-  @override
-  String get snoozeThreeMonths => '3달 연기';
-
-  @override
-  String get snoozePickerTitle => '알림 연기';
 
   @override
   String get update => '업데이트';
@@ -684,4 +524,311 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get updateStoreOpenError => '스토어를 열 수 없습니다. 잠시 후 다시 시도해주세요.';
+
+  @override
+  String get analytics => '집계';
+
+  @override
+  String get tabAnalyticsSummary => '투자 집계';
+
+  @override
+  String get tabTradeCalendar => '매매 캘린더';
+
+  @override
+  String get periodAll => '전체';
+
+  @override
+  String get period1Y => '1년';
+
+  @override
+  String get period6M => '6개월';
+
+  @override
+  String get period1M => '1개월';
+
+  @override
+  String get period1W => '1주일';
+
+  @override
+  String get marketAll => '모든 시장';
+
+  @override
+  String get marketDomestic => '국내 (KRX)';
+
+  @override
+  String get marketUS => '미국 (US)';
+
+  @override
+  String get profitFactor => '손익비';
+
+  @override
+  String get payoffRatio => '수익/손실 비율';
+
+  @override
+  String get avgWin => '평균 수익';
+
+  @override
+  String get avgLoss => '평균 손실';
+
+  @override
+  String get avgHoldingPeriod => '평균 보유 기간';
+
+  @override
+  String daysUnit(int days) {
+    return '$days일';
+  }
+
+  @override
+  String winStreakFormat(int count) {
+    return '$count연승';
+  }
+
+  @override
+  String lossStreakFormat(int count) {
+    return '$count연패';
+  }
+
+  @override
+  String get bestTradeLabel => '최고 수익';
+
+  @override
+  String get worstTradeLabel => '최대 손실';
+
+  @override
+  String get cumulativePnLChart => '누적 실현 손익 추이';
+
+  @override
+  String get monthlyPnLChart => '월별 실현 손익';
+
+  @override
+  String get winLossDistribution => '승패 분포';
+
+  @override
+  String get stockRankings => '종목별 성과 랭킹';
+
+  @override
+  String get strategyPerformance => '전략별 성과 분석';
+
+  @override
+  String get weekdayPatterns => '요일별 매매 패턴';
+
+  @override
+  String get topGainers => '수익 상위 종목';
+
+  @override
+  String get topLosers => '손실 상위 종목';
+
+  @override
+  String get emptyAnalyticsTitle => '집계할 매매 데이터가 없습니다';
+
+  @override
+  String get emptyAnalyticsSubtitle =>
+      '일지에 매매를 기록하면 다각적인 투자 집계와 분석을 확인할 수 있습니다.';
+
+  @override
+  String get uncategorisedStrategy => '(미분류)';
+
+  @override
+  String get tradeTypeAll => '전체 계좌';
+
+  @override
+  String get noClosedTrades => '선택한 기간에 완료된 거래가 없습니다';
+
+  @override
+  String get infinitySymbol => '∞';
+
+  @override
+  String get accountTag => '계좌 태그';
+
+  @override
+  String get accountManagement => '계좌 및 태그 관리';
+
+  @override
+  String get allAccounts => '전체 계좌';
+
+  @override
+  String get unassignedAccount => '미지정';
+
+  @override
+  String get accountPerformance => '계좌별 손익 분석';
+
+  @override
+  String get addAccount => '새 계좌 추가';
+
+  @override
+  String get editAccount => '계좌 수정';
+
+  @override
+  String get deleteAccount => '계좌 삭제';
+
+  @override
+  String get accountName => '계좌명';
+
+  @override
+  String get accountProfitLoss => '계좌 손익';
+
+  @override
+  String get selectAccountTag => '계좌 선택 / 계좌 태그';
+
+  @override
+  String get accountNameHint => '예: 키움증권 메인';
+
+  @override
+  String get accountMemoHint => '메모 (선택)';
+
+  @override
+  String get deleteAccountConfirmTitle => '이 계좌를 삭제할까요?';
+
+  @override
+  String get deleteAccountConfirmBody =>
+      '기존 거래 기록은 유지되며, 해당 거래는 미지정 계좌로 표시될 수 있습니다.';
+
+  @override
+  String get noAccountsRegistered => '등록된 계좌가 없습니다. 새 계좌을 추가해보세요.';
+
+  @override
+  String tradesCount(int count) {
+    return '$count건';
+  }
+
+  @override
+  String openPositionsCount(int count) {
+    return '보유 $count건';
+  }
+
+  @override
+  String get avgReturn => '평균 수익률';
+
+  @override
+  String get viewTradesForAccount => '거래 내역 보기';
+
+  @override
+  String get myAccounts => '내 계좌';
+
+  @override
+  String get totalInvested => '총 매수금액';
+
+  @override
+  String get recentStocks => '최근 종목';
+
+  @override
+  String get investedCapital => '투자 원금';
+
+  @override
+  String get recoveredAmount => '회수 금액';
+
+  @override
+  String heldForDaysFormat(int days) {
+    return '$days일간 보유';
+  }
+
+  @override
+  String get priceMovement => '가격 변동';
+
+  @override
+  String get marketEtc => '기타/가상자산';
+
+  @override
+  String get exportToExcel => '엑셀(CSV)로 내보내기';
+
+  @override
+  String get exportCsvDescription => 'Excel·한셀·구글 스프레드시트에서 바로 열리는 UTF-8 CSV';
+
+  @override
+  String get exportCopyClipboard => '클립보드로 복사';
+
+  @override
+  String get exportCopiedSnack => '엑셀(CSV) 데이터가 클립보드에 복사되었습니다.';
+
+  @override
+  String exportTradeCount(int count) {
+    return '총 $count건의 거래가 포함됩니다.';
+  }
+
+  @override
+  String get themeMode => '테마 모드';
+
+  @override
+  String get themeModeSystem => '시스템';
+
+  @override
+  String get themeModeLight => '라이트';
+
+  @override
+  String get themeModeDark => '다크';
+
+  @override
+  String get brokerAccount => '증권사 선택';
+
+  @override
+  String get accountType => '계좌 구분';
+
+  @override
+  String get accountTypeCash => '위탁계좌';
+
+  @override
+  String get accountTypeIsa => 'ISA 계좌';
+
+  @override
+  String get accountTypePension => '연금저축';
+
+  @override
+  String get accountTypeIrp => 'IRP';
+
+  @override
+  String get accountTypeCma => 'CMA';
+
+  @override
+  String get quickAddAccount => '새 계좌 추가';
+
+  @override
+  String addTradeOnDate(int month, int day) {
+    return '$month월 $day일에 매매 기록하기';
+  }
+
+  @override
+  String tradesOnDate(int month, int day) {
+    return '$month월 $day일 거래';
+  }
+
+  @override
+  String get quickRecordTrade => '매매 기록하기';
+
+  @override
+  String get manageAccounts => '계좌 관리';
+
+  @override
+  String get accountsOverview => '증권사/계좌별 현황';
+
+  @override
+  String get openPositions => '보유 포지션';
+
+  @override
+  String get totalReturnPercent => '총 수익률';
+
+  @override
+  String get completedTrades => '완료 거래';
+
+  @override
+  String get holdingsCount => '보유 종목';
+
+  @override
+  String completedTradesCount(int count) {
+    return '완료 거래 $count건';
+  }
+
+  @override
+  String get searchTrades => '종목명·전략·메모 검색';
+
+  @override
+  String get sortBy => '정렬';
+
+  @override
+  String get sortByProfit => '수익순';
+
+  @override
+  String get sortByLoss => '손실순';
+
+  @override
+  String get dataManagement => '데이터 관리';
 }

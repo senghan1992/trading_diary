@@ -18,9 +18,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get review => 'Review';
 
   @override
-  String get searchPlaceholder => 'Search by stock name or code';
-
-  @override
   String get resultFilter => 'Result';
 
   @override
@@ -63,9 +60,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get winRate => 'Profit Rate';
 
   @override
-  String get marketIndices => 'Market Indices';
-
-  @override
   String get recentTrades => 'Recent Trades';
 
   @override
@@ -76,12 +70,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noTradesYet => 'No trades yet. Start journaling!';
-
-  @override
-  String get reminders => 'Reminders';
-
-  @override
-  String get noPendingReminders => 'No pending reminders';
 
   @override
   String get learning => 'Learning';
@@ -195,9 +183,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get english => 'English';
 
   @override
-  String get theme => 'Theme';
-
-  @override
   String get dark => 'Dark';
 
   @override
@@ -208,15 +193,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get displaySubtitle => 'Display and colors';
-
-  @override
-  String get screenMode => 'Screen mode';
-
-  @override
-  String get darkMode => 'Dark mode';
-
-  @override
-  String get lightMode => 'Light mode';
 
   @override
   String get priceColors => 'Price colors';
@@ -320,30 +296,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get whatILearned => 'What I Learned';
 
   @override
-  String get search => 'Search';
-
-  @override
-  String get noResults => 'No Results';
-
-  @override
-  String get kospi => 'KOSPI';
-
-  @override
-  String get kosdaq => 'KOSDAQ';
-
-  @override
-  String get nasdaq => 'NASDAQ';
-
-  @override
-  String get sp500 => 'S&P 500';
-
-  @override
-  String get dowJones => 'Dow Jones';
-
-  @override
-  String get lastUpdated => 'Last Updated';
-
-  @override
   String get error => 'Error';
 
   @override
@@ -362,43 +314,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get position => 'Position';
 
   @override
-  String get positionEntry => 'Position Entry';
-
-  @override
-  String get positionClose => 'Position Close';
-
-  @override
   String get openPosition => 'Open';
 
   @override
   String get closedPosition => 'Closed';
 
   @override
-  String get currentPrice => 'Current Price';
-
-  @override
-  String get unrealizedPL => 'Unrealized P/L';
-
-  @override
   String get marketValue => 'Market Value';
-
-  @override
-  String get holdings => 'Holdings';
 
   @override
   String get addPosition => 'Record Entry';
 
   @override
   String get closePosition => 'Record Exit';
-
-  @override
-  String get simulate => 'Simulate';
-
-  @override
-  String get trackPosition => 'Track';
-
-  @override
-  String get updatePosition => 'Update Position';
 
   @override
   String get entryOnly => 'Buy Only';
@@ -417,56 +345,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addAnalysisNote => 'Add Analysis Note';
-
-  @override
-  String get reminderTitle => 'Reminder Title';
-
-  @override
-  String get reminderNote => 'Reminder Note';
-
-  @override
-  String get reminderDate => 'Reminder Date';
-
-  @override
-  String get setReminder => 'Set Reminder';
-
-  @override
-  String get reminderFor => 'Reminder';
-
-  @override
-  String get deleteReminder => 'Delete Reminder';
-
-  @override
-  String get deleteReminderConfirm =>
-      'Delete this reminder? It will no longer fire.';
-
-  @override
-  String get notifications => 'Notifications';
-
-  @override
-  String get notificationsSubtitle => 'Trade reminders and review alerts';
-
-  @override
-  String get notificationsEnabled => 'Enable notifications';
-
-  @override
-  String get notificationsEnabledSubtitle =>
-      'Get reminded about trades, reviews, and positions';
-
-  @override
-  String get notificationsPermissionDenied =>
-      'Notification permission is off. Tap to open settings.';
-
-  @override
-  String get notificationsOpenSettings => 'Open Settings';
-
-  @override
-  String get notificationsReschedule => 'Reschedule pending reminders';
-
-  @override
-  String notificationsRescheduleDone(int count) {
-    return '$count reminders scheduled';
-  }
 
   @override
   String get tabOverview => 'Overview';
@@ -629,52 +507,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get writtenNotes => 'Saved Notes';
 
   @override
-  String get setRemindersLabel => 'Set Reminders';
-
-  @override
-  String get noRemindersSet => 'No reminders set yet';
-
-  @override
-  String get newReminderHeader => 'New Reminder';
-
-  @override
-  String get reminderTitleHint =>
-      'Reminder title (e.g., re-check this stock in 3 days)';
-
-  @override
-  String get reminderNoteHint => 'Notes (optional)';
-
-  @override
-  String get enterReminderTitle => 'Please enter a reminder title';
-
-  @override
-  String reminderSetFormat(String date) {
-    return 'Reminder set for $date';
-  }
-
-  @override
-  String get reminderOverdue => 'Overdue';
-
-  @override
   String get emptyOpenPositions => 'No open positions';
 
   @override
   String get emptyClosedTrades => 'No closed trades yet';
-
-  @override
-  String get snoozeOneDay => 'Snooze 1 day';
-
-  @override
-  String get snoozeOneWeek => 'Snooze 1 week';
-
-  @override
-  String get snoozeOneMonth => 'Snooze 1 month';
-
-  @override
-  String get snoozeThreeMonths => 'Snooze 3 months';
-
-  @override
-  String get snoozePickerTitle => 'Snooze reminder';
 
   @override
   String get update => 'Update';
@@ -699,4 +535,312 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get updateStoreOpenError =>
       'Couldn\'t open the store. Please try again.';
+
+  @override
+  String get analytics => 'Analytics';
+
+  @override
+  String get tabAnalyticsSummary => 'Overview';
+
+  @override
+  String get tabTradeCalendar => 'Calendar';
+
+  @override
+  String get periodAll => 'All';
+
+  @override
+  String get period1Y => '1Y';
+
+  @override
+  String get period6M => '6M';
+
+  @override
+  String get period1M => '1M';
+
+  @override
+  String get period1W => '1W';
+
+  @override
+  String get marketAll => 'All markets';
+
+  @override
+  String get marketDomestic => 'Korea (KRX)';
+
+  @override
+  String get marketUS => 'US';
+
+  @override
+  String get profitFactor => 'Profit factor';
+
+  @override
+  String get payoffRatio => 'Win/Loss ratio';
+
+  @override
+  String get avgWin => 'Avg. win';
+
+  @override
+  String get avgLoss => 'Avg. loss';
+
+  @override
+  String get avgHoldingPeriod => 'Avg. holding';
+
+  @override
+  String daysUnit(int days) {
+    return '${days}d';
+  }
+
+  @override
+  String winStreakFormat(int count) {
+    return '$count wins';
+  }
+
+  @override
+  String lossStreakFormat(int count) {
+    return '$count losses';
+  }
+
+  @override
+  String get bestTradeLabel => 'Best trade';
+
+  @override
+  String get worstTradeLabel => 'Worst trade';
+
+  @override
+  String get cumulativePnLChart => 'Cumulative realised P&L';
+
+  @override
+  String get monthlyPnLChart => 'Monthly realised P&L';
+
+  @override
+  String get winLossDistribution => 'Win/Loss distribution';
+
+  @override
+  String get stockRankings => 'Performance by stock';
+
+  @override
+  String get strategyPerformance => 'Performance by strategy';
+
+  @override
+  String get weekdayPatterns => 'Patterns by weekday';
+
+  @override
+  String get topGainers => 'Top gainers';
+
+  @override
+  String get topLosers => 'Top losers';
+
+  @override
+  String get emptyAnalyticsTitle => 'No trades to aggregate yet';
+
+  @override
+  String get emptyAnalyticsSubtitle =>
+      'Log a trade in the journal to unlock multi-dimensional analytics and performance insights.';
+
+  @override
+  String get uncategorisedStrategy => '(Uncategorised)';
+
+  @override
+  String get tradeTypeAll => 'All accounts';
+
+  @override
+  String get noClosedTrades => 'No closed trades in this window';
+
+  @override
+  String get infinitySymbol => '∞';
+
+  @override
+  String get accountTag => 'Account tag';
+
+  @override
+  String get accountManagement => 'Accounts & tags';
+
+  @override
+  String get allAccounts => 'All accounts';
+
+  @override
+  String get unassignedAccount => '(Unassigned)';
+
+  @override
+  String get accountPerformance => 'Performance by account';
+
+  @override
+  String get addAccount => 'Add account';
+
+  @override
+  String get editAccount => 'Edit account';
+
+  @override
+  String get deleteAccount => 'Delete account';
+
+  @override
+  String get accountName => 'Account name';
+
+  @override
+  String get accountProfitLoss => 'P&L';
+
+  @override
+  String get selectAccountTag => 'Select account / tag';
+
+  @override
+  String get accountNameHint => 'e.g. Kiwoom main';
+
+  @override
+  String get accountMemoHint => 'Memo (optional)';
+
+  @override
+  String get deleteAccountConfirmTitle => 'Delete this account?';
+
+  @override
+  String get deleteAccountConfirmBody =>
+      'Existing trades are kept but may show as unassigned.';
+
+  @override
+  String get noAccountsRegistered => 'No accounts yet. Add one to get started.';
+
+  @override
+  String tradesCount(int count) {
+    return '$count';
+  }
+
+  @override
+  String openPositionsCount(int count) {
+    return '$count open';
+  }
+
+  @override
+  String get avgReturn => 'Avg return';
+
+  @override
+  String get viewTradesForAccount => 'View trades';
+
+  @override
+  String get myAccounts => 'My Accounts';
+
+  @override
+  String get totalInvested => 'Total Invested';
+
+  @override
+  String get recentStocks => 'Recent Stocks';
+
+  @override
+  String get investedCapital => 'Invested Capital';
+
+  @override
+  String get recoveredAmount => 'Recovered Amount';
+
+  @override
+  String heldForDaysFormat(int days) {
+    return 'Held for $days days';
+  }
+
+  @override
+  String get priceMovement => 'Price Movement';
+
+  @override
+  String get marketEtc => 'Other/Crypto';
+
+  @override
+  String get exportToExcel => 'Export to Excel (CSV)';
+
+  @override
+  String get exportCsvDescription =>
+      'UTF-8 CSV that opens directly in Excel, Hancell, or Google Sheets';
+
+  @override
+  String get exportCopyClipboard => 'Copy to Clipboard';
+
+  @override
+  String get exportCopiedSnack => 'Excel (CSV) data copied to clipboard.';
+
+  @override
+  String exportTradeCount(int count) {
+    return '$count trades included.';
+  }
+
+  @override
+  String get themeMode => 'Theme Mode';
+
+  @override
+  String get themeModeSystem => 'System';
+
+  @override
+  String get themeModeLight => 'Light';
+
+  @override
+  String get themeModeDark => 'Dark';
+
+  @override
+  String get brokerAccount => 'Select Broker';
+
+  @override
+  String get accountType => 'Account Type';
+
+  @override
+  String get accountTypeCash => 'Cash Account';
+
+  @override
+  String get accountTypeIsa => 'ISA Account';
+
+  @override
+  String get accountTypePension => 'Pension Savings';
+
+  @override
+  String get accountTypeIrp => 'IRP';
+
+  @override
+  String get accountTypeCma => 'CMA';
+
+  @override
+  String get quickAddAccount => 'Add New Account';
+
+  @override
+  String addTradeOnDate(int month, int day) {
+    return 'Record trade on $month/$day';
+  }
+
+  @override
+  String tradesOnDate(int month, int day) {
+    return 'Trades on $month/$day';
+  }
+
+  @override
+  String get quickRecordTrade => 'Record Trade';
+
+  @override
+  String get manageAccounts => 'Manage Accounts';
+
+  @override
+  String get accountsOverview => 'Accounts Overview';
+
+  @override
+  String get openPositions => 'Open Positions';
+
+  @override
+  String get totalReturnPercent => 'Total Return';
+
+  @override
+  String get completedTrades => 'Completed Trades';
+
+  @override
+  String get holdingsCount => 'Holdings';
+
+  @override
+  String completedTradesCount(int count) {
+    return '$count completed trades';
+  }
+
+  @override
+  String get searchTrades => 'Search name, strategy, memo';
+
+  @override
+  String get sortBy => 'Sort';
+
+  @override
+  String get sortByProfit => 'Best return';
+
+  @override
+  String get sortByLoss => 'Worst return';
+
+  @override
+  String get dataManagement => 'Data Management';
 }

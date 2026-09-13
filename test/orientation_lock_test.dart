@@ -108,12 +108,14 @@ void main() {
       expect(orientationsFor(Breakpoints.classify(ss)), hasLength(4));
     });
 
-    test('iPad Pro 12.9" landscape 1366×1024 → shortestSide 1024 → expanded',
-        () {
-      final ss = shortestSideFor(1366, 1024);
-      expect(Breakpoints.classify(ss), WindowSizeClass.expanded);
-      expect(orientationsFor(Breakpoints.classify(ss)), hasLength(4));
-    });
+    test(
+      'iPad Pro 12.9" landscape 1366×1024 → shortestSide 1024 → expanded',
+      () {
+        final ss = shortestSideFor(1366, 1024);
+        expect(Breakpoints.classify(ss), WindowSizeClass.expanded);
+        expect(orientationsFor(Breakpoints.classify(ss)), hasLength(4));
+      },
+    );
 
     test('1440×900 desktop window → shortestSide 900 → expanded', () {
       final ss = shortestSideFor(1440, 900);

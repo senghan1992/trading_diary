@@ -4,8 +4,9 @@ import 'package:trading_diary/main.dart';
 
 void main() {
   group('SystemBarInsetGuard', () {
-    testWidgets('consumes system bar bottom and left padding from child',
-        (tester) async {
+    testWidgets('consumes system bar bottom and left padding from child', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -17,9 +18,7 @@ void main() {
           ),
           child: MaterialApp(
             builder: (context, child) => SystemBarInsetGuard(child: child!),
-            home: const Scaffold(
-              body: Placeholder(),
-            ),
+            home: const Scaffold(body: Placeholder()),
           ),
         ),
       );
@@ -29,22 +28,19 @@ void main() {
       expect(bottomLeft.dx, equals(24));
     });
 
-    testWidgets('passes through full surface when padding is zero',
-        (tester) async {
+    testWidgets('passes through full surface when padding is zero', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
         MediaQuery(
-          data: const MediaQueryData(
-            padding: EdgeInsets.zero,
-          ),
+          data: const MediaQueryData(padding: EdgeInsets.zero),
           child: MaterialApp(
             builder: (context, child) => SystemBarInsetGuard(child: child!),
-            home: const Scaffold(
-              body: Placeholder(),
-            ),
+            home: const Scaffold(body: Placeholder()),
           ),
         ),
       );
@@ -54,8 +50,9 @@ void main() {
       expect(bottomLeft.dx, equals(0));
     });
 
-    testWidgets('preserves viewInsets (keyboard bottom inset) for child',
-        (tester) async {
+    testWidgets('preserves viewInsets (keyboard bottom inset) for child', (
+      tester,
+    ) async {
       double? capturedViewInsetBottom;
 
       await tester.pumpWidget(
@@ -68,8 +65,9 @@ void main() {
             builder: (context, child) => SystemBarInsetGuard(child: child!),
             home: Builder(
               builder: (context) {
-                capturedViewInsetBottom =
-                    MediaQuery.viewInsetsOf(context).bottom;
+                capturedViewInsetBottom = MediaQuery.viewInsetsOf(
+                  context,
+                ).bottom;
                 return const Scaffold(body: Placeholder());
               },
             ),

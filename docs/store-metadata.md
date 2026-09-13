@@ -64,17 +64,14 @@ Journal trades, review on charts
 • 메모, 매수 근거, 시장 상황, 리스크 관리, 핵심 교훈, 다음 다짐까지 6개 섹션으로 깊이 있는 복습
 • 모의/실전 거래 구분
 
-📊 차트 & 복습
-• 일봉 캔들스틱 + 진입가/청산가 표시
+📊 매매 결과 & 복습
+• 진입가→청산가 변동 게이지, 손익·수익률, 원금/회수금 한눈에
 • 월별/일별 달력에서 매매 모아보기
 • 승률, 평균 수익, 평균 손실, 최고/최악 거래 자동 집계
 
-🔔 리마인더
-• 매매 후 1일/1주/1달/3달 후 재확인 알림
-• 같은 실수 반복 방지
-
-🌐 멀티 마켓
-• KOSPI / KOSDAQ / NASDAQ 지수 실시간
+🏦 멀티 계좌 통합 관리
+• 키움·미래에셋·토스 등 여러 증권사 계좌를 태그로 한곳에서
+• 전체 통합 집계와 계좌별 독립 집계 모두 지원
 • 한국식(빨강↑/파랑↓) / 서양식(초록↑/빨강↓) 색상 전환
 
 💾 로컬 우선
@@ -113,18 +110,14 @@ Trading Diary turns those reflections into structured review sessions.
 • 6-section deep review: rationale, market context, risk management, 
   key lessons, pledge for next trade
 • Virtual vs real-money tagging
-
-📊 Charts & review
-• Daily candlestick chart with entry/exit markers
+📊 Trade visualizer & review
+• Entry→exit price gauge, P&L badge, invested vs recovered at a glance
 • Monthly/daily calendar aggregation
 • Win rate, average win/loss, best/worst trade auto-stats
 
-🔔 Reminders
-• Re-check reminders: 1 day / 1 week / 1 month / 3 months after each trade
-• Prevent repeating the same mistake
-
-🌐 Multi-market
-• Live KOSPI / KOSDAQ / NASDAQ indices
+🏦 Multi-account management
+• Tag trades across Kiwoom, Mirae Asset, Toss and more — all in one place
+• Combined totals plus per-account stats, side by side
 • Korean-style (red↑/blue↓) / Western-style (green↑/red↓) color toggle
 
 💾 Local-first
@@ -153,12 +146,12 @@ This app is strictly for journaling and reviewing past trades.
 
 ### 영어 (글로벌 우선)
 ```
-trading,journal,stock,review,KOSPI,NASDAQ,candlestick,trade log,investor,diary
+trading,journal,stock,review,KOSPI,NASDAQ,multi account,trade log,investor,diary
 ```
 
 ### 한국어
 ```
-주식,매매,일지,트레이딩,복습,캔들,KOSPI,NASDAQ,가계부,투자
+주식,매매,일지,트레이딩,복습,계좌,KOSPI,NASDAQ,가계부,투자
 ```
 
 > iOS는 등록 후 90일까지 키워드 변경 가능. 검색 노출 보고 A/B 테스트 권장.
@@ -204,14 +197,14 @@ trading,journal,stock,review,KOSPI,NASDAQ,candlestick,trade log,investor,diary
 #### 한국어
 1. **홈 대시보드** — "한눈에 보는 매매 요약"
 2. **일지 입력** — "6개 섹션 깊이 있는 복습"
-3. **캔들스틱 차트** — "진입가·청산가 한눈에"
+3. **매매 결과 시각화** — "진입가·청산가 한눈에"
 4. **월별 복습** — "달력으로 보는 매매 흐름"
 5. **승률 통계** — "승률·평균 수익 자동 집계"
 
 #### 영어
 1. **Home dashboard** — "Trade summary at a glance"
 2. **Trade journal** — "6-section deep review"
-3. **Candlestick chart** — "Entry & exit prices in one view"
+3. **Trade visualizer** — "Entry & exit prices in one view"
 4. **Monthly review** — "Your trades on the calendar"
 5. **Win-rate stats** — "Win rate and avg P&L, automatic"
 

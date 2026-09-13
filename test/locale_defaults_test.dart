@@ -48,8 +48,11 @@ void main() {
     test('Korean device (ko_KR) → Korean colors by default', () {
       setLocale(const Locale('ko', 'KR'));
       final provider = ThemeProvider();
-      expect(provider.useKoreanColors, isTrue,
-          reason: 'Korean device should pick KOSPI-style red/blue colors');
+      expect(
+        provider.useKoreanColors,
+        isTrue,
+        reason: 'Korean device should pick KOSPI-style red/blue colors',
+      );
       expect(provider.upColor, AppColors.red);
       expect(provider.downColor, AppColors.blue);
     });
@@ -57,8 +60,11 @@ void main() {
     test('English device (en_US) → Western colors by default', () {
       setLocale(const Locale('en', 'US'));
       final provider = ThemeProvider();
-      expect(provider.useKoreanColors, isFalse,
-          reason: 'English device should pick NASDAQ-style green/red');
+      expect(
+        provider.useKoreanColors,
+        isFalse,
+        reason: 'English device should pick NASDAQ-style green/red',
+      );
       expect(provider.upColor, AppColors.green);
       expect(provider.downColor, AppColors.red);
     });
@@ -69,16 +75,18 @@ void main() {
       expect(provider.useKoreanColors, isFalse);
     });
 
-    test('saved user preference overrides the device-locale default',
-        () async {
+    test('saved user preference overrides the device-locale default', () async {
       // User previously chose Korean colors on an English device.
       SharedPreferences.setMockInitialValues({'app_color_mode': true});
       setLocale(const Locale('en', 'US'));
       final provider = ThemeProvider();
       // _loadPrefs is fire-and-forget; wait one microtask for it to land.
       await Future<void>.delayed(Duration.zero);
-      expect(provider.useKoreanColors, isTrue,
-          reason: 'Saved user choice should win over the device default');
+      expect(
+        provider.useKoreanColors,
+        isTrue,
+        reason: 'Saved user choice should win over the device default',
+      );
     });
   });
 
@@ -100,20 +108,27 @@ void main() {
     test('Unknown locale (ja) → falls back to English', () {
       setLocale(const Locale('ja'));
       final provider = LanguageProvider();
-      expect(provider.locale.languageCode, 'en',
-          reason: 'Unsupported locales fall back to English — the only '
-              'other entry in `supportedLocales`');
+      expect(
+        provider.locale.languageCode,
+        'en',
+        reason:
+            'Unsupported locales fall back to English — the only '
+            'other entry in `supportedLocales`',
+      );
     });
 
-    test('saved user preference overrides the device-locale default',
-        () async {
+    test('saved user preference overrides the device-locale default', () async {
       SharedPreferences.setMockInitialValues({'app_language': 'en'});
       setLocale(const Locale('ko'));
       final provider = LanguageProvider();
       await Future<void>.delayed(Duration.zero);
-      expect(provider.locale.languageCode, 'en',
-          reason: 'User chose English once → keeps English even after the '
-              'device locale changes to Korean');
+      expect(
+        provider.locale.languageCode,
+        'en',
+        reason:
+            'User chose English once → keeps English even after the '
+            'device locale changes to Korean',
+      );
     });
   });
 

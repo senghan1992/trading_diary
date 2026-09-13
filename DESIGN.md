@@ -1,125 +1,142 @@
-# Design System Inspired by Slate Charcoal
+# Design System — The Ledger
+
+A premium, calm financial journal. Warm paper surfaces, deep evergreen
+actions, and brass emphasis — built so the user's own numbers are the
+loudest thing on screen. Replaces the previous cold slate/indigo system.
 
 ## 1. Visual Theme & Atmosphere
 
-The app uses Slate Charcoal as its commanding brand color. The design operates on white/cool backgrounds with Slate Charcoal (`#1E293B`, `#E2E8F0`, `#0F172A`) creating a distinctive, professional identity. The proprietary headings with bold (700) weight and negative tracking, while IBM Plex Sans serves as the UI workhorse.
+The app reads like a crafted financial instrument you can trust, not a
+dashboard you tolerate. Light mode is warm ivory paper with deep warm-ink
+text; dark mode is restful ink-green (never pitch black) for nightly
+review. Every surface is calm by default: cards sit on barely-there
+double shadows, hairlines are warm, and the evergreen accent appears only
+where the user acts.
 
 **Key Characteristics:**
-- Slate Charcoal (`#1E293B`) as primary brand with variants (`#E2E8F0`, `#0F172A`)
-- Kraken-Brand (display) + Kraken-Product (UI) dual font system
-- Near-black (`#101114`) text with cool blue-gray neutral scale
-- 12px radius buttons (rounded but not pill)
-- Subtle shadows (`rgba(0,0,0,0.03) 0px 4px 24px`) — whisper-level
-- Green accent (`#149e61`) for positive/success states
+- Warm ivory paper ground (`#F6F4ED`) with crisp white cards
+- Deep evergreen (`#1E5B45`) as the single action color
+- Brass/gold (`#A68A3C`) for premium emphasis (calendar markers, wins)
+- Ink text (`#182019`) with sage muted tones (`#5E6A60`)
+- Generous 14–24px radii; buttons rounded but never pill
+- Soft, directionally-lit double shadows
+- Semantics tuned for WCAG AA on paper: green `#0E8345`, red `#C94040`
 
 ## 2. Color Palette & Roles
 
-### Primary
-- **Slate Charcoal** (`#1E293B`): Primary CTA, brand accent, links
-- **Charcoal Dark** (`#0F172A`): Button borders, outlined variants
-- **Charcoal Light** (`#E2E8F0`): Light variant / dark mode primary
-- **Charcoal Subtle** (`rgba(30,41,59,0.06)`): Charcoal at 6% — subtle button backgrounds
-- **Near Black** (`#101114`): Primary text
+### Light Mode
+| Token | Hex | Role |
+|---|---|---|
+| `bg` | `#F6F4ED` | Warm ivory scaffold |
+| `card` | `#FFFFFF` | Crisp paper cards & sheets |
+| `surface` | `#ECE9DF` | Warm sand — input wells, chips |
+| `border` | `#E4DFD2` | Warm hairlines |
+| `text` | `#182019` | Deep warm ink — primary text |
+| `textMuted` | `#5E6A60` | Sage — secondary text |
+| `accent` | `#1E5B45` | Deep evergreen — actions |
+| `accentStrong` | `#164736` | Pressed state |
+| `accentSubtle` | `8% evergreen` | Selected washes |
+| `royalBlue` | `#2E6F8E` | Steel-blue secondary |
+| `gold` | `#A68A3C` | Brass — premium emphasis |
 
-### Neutral
-- **Cool Gray** (`#686b82`): Primary neutral, borders at 24% opacity
-- **Silver Blue** (`#9497a9`): Secondary text, muted elements
-- **White** (`#ffffff`): Primary surface
-- **Border Gray** (`#dedee5`): Divider borders
+### Dark Mode
+| Token | Hex | Role |
+|---|---|---|
+| `bg` | `#0E1310` | Deep ink-green scaffold |
+| `card` | `#181F1A` | Ledger-green cards |
+| `surface` | `#222B24` | Chips & input wells |
+| `border` | `#2A342C` | Hairlines |
+| `text` | `#EDF1E8` | Warm paper white |
+| `textMuted` | `#96A195` | Sage |
+| `accent` | `#74CE9B` | Bright evergreen — actions |
+| `accentStrong` | `#8BDDB1` | Pressed state |
+| `royalBlue` | `#79B6D9` | Steel-blue secondary |
+| `gold` | `#D6B678` | Brass |
 
-### Semantic
-- **Green** (`#149e61`): Success/positive at 16% opacity for badges
-- **Green Dark** (`#026b3f`): Badge text
+### Semantic (shared)
+- `green` `#0E8345` / `red` `#C94040` — price sentiment; the Korean
+  (red=up, blue=down) vs Western (green=up, red=down) convention remains
+  a user choice in Settings via `ThemeProvider.upColor/downColor`.
+- `orange` `#D98A28` — warnings, holding-period accent.
+- Calendar markers: `#1FA368` win, `#E05555` loss, `#8A6D2A` open/notes.
 
 ## 3. Typography Rules
 
-### Font Families
-- **Display**: `Kraken-Brand`, fallbacks: `IBM Plex Sans, Helvetica, Arial`
-- **UI / Body**: `Kraken-Product`, fallbacks: `Helvetica Neue, Helvetica, Arial`
+Single workhorse family across the app (platform default, weights 500–800),
+with tight negative tracking on headings so numbers and Korean glyphs read
+cleanly.
 
-### Hierarchy
+| Role | Size | Weight | Notes |
+|---|---|---|---|
+| App bar title | 22 | 800 | `-0.4` tracking |
+| Hero figure | 36 | 800 | `-0.8` tracking, `1.05` height |
+| Section title | 17 | 800 | `-0.3` tracking |
+| Card title | 16 | 700 | |
+| Body | 14–16 | 400 | `1.5` height |
+| Caption / meta | 11–13 | 500–600 | muted sage |
 
-| Role | Font | Size | Weight | Line Height | Letter Spacing |
-|------|------|------|--------|-------------|----------------|
-| Display Hero | Kraken-Brand | 48px | 700 | 1.17 | -1px |
-| Section Heading | Kraken-Brand | 36px | 700 | 1.22 | -0.5px |
-| Sub-heading | Kraken-Brand | 28px | 700 | 1.29 | -0.5px |
-| Feature Title | Kraken-Product | 22px | 600 | 1.20 | normal |
-| Body | Kraken-Product | 16px | 400 | 1.38 | normal |
-| Body Medium | Kraken-Product | 16px | 500 | 1.38 | normal |
-| Button | Kraken-Product | 16px | 500–600 | 1.38 | normal |
-| Caption | Kraken-Product | 14px | 400–700 | 1.43–1.71 | normal |
-| Small | Kraken-Product | 12px | 400–500 | 1.33 | normal |
-| Micro | Kraken-Product | 7px | 500 | 1.00 | uppercase |
+Section micro-labels (uppercase 11px) were retired — they were hard to
+read. Section headers are now 17px ink titles.
 
 ## 4. Component Stylings
 
 ### Buttons
+- **Primary**: evergreen fill, white text `#1E5B45`/`#FFFFFF`, 14px radius,
+  15px w700, no elevation.
+- **Outlined**: 1.2px evergreen at 50% alpha, 14px radius.
+- **Destructive / success**: semantic fills (`error`, `success`).
 
-**Primary Charcoal**
-- Background: `#1E293B`
-- Text: `#ffffff`
-- Padding: 13px 16px
-- Radius: 12px
+### Cards
+- White (light) / ledger-green (dark), 1px warm hairline, 18px radius.
+- Elevation: two-layer soft shadow
+  (`rgba(32,27,16,0.07)` 20px blur @ (0,10) + `0.04` 5px @ (0,2));
+  dark mode uses heavier blacker shadows.
 
-**Charcoal Outlined**
-- Background: `#ffffff`
-- Text: `#1E293B`
-- Border: `1px solid #1E293B`
-- Radius: 12px
+### Navigation
+- **Phone**: `NavigationBar` — 68px tall, pill indicator in evergreen wash,
+  selected labels w800 evergreen, unselected muted sage.
+- **Tablet/desktop**: matching `NavigationRail`, 72px collapsed / 220px
+  extended, same selected/unselected treatment.
+- **Ad footer**: a single quiet slot pinned to the bottom of the shell —
+  directly above the nav bar on phones, below the content column on
+  rails. Content screens never mount their own ad.
 
-**Charcoal Subtle**
-- Background: `rgba(30,41,59,0.06)`
-- Text: `#1E293B`
-- Padding: 8px
-- Radius: 12px
-
-**White Button**
-- Background: `#ffffff`
-- Text: `#101114`
-- Radius: 10px
-- Shadow: `rgba(0,0,0,0.03) 0px 4px 24px`
-
-**Secondary Gray**
-- Background: `rgba(148,151,169,0.08)`
-- Text: `#101114`
-- Radius: 12px
-
-### Badges
-- Success: `rgba(20,158,97,0.16)` bg, `#026b3f` text, 6px radius
-- Neutral: `rgba(104,107,130,0.12)` bg, `#484b5e` text, 8px radius
+### Inputs
+- Filled warm-sand wells, no border until focus (1.5px evergreen).
 
 ## 5. Layout Principles
 
-### Spacing: 1px, 2px, 3px, 4px, 5px, 6px, 8px, 10px, 12px, 13px, 15px, 16px, 20px, 24px, 25px
-### Border Radius: 3px, 6px, 8px, 10px, 12px, 16px, 9999px, 50%
+- 4px rhythm (`AppSpacing`), cards at 16–24px padding.
+- Radii: 10 / 14 / 18 / 24 / pill.
+- Two-column grids only at tablet width (`isExpandedOrUp`) — home sections
+  and journal cards never squeeze below ~250px cells.
+- Hero gradient: evergreen `#244A37` → deep ink-green `#123A2A`.
 
 ## 6. Depth & Elevation
-- Subtle: `rgba(0,0,0,0.03) 0px 4px 24px`
-- Micro: `rgba(16,24,40,0.04) 0px 1px 4px`
+- Card: `rgba(32,27,16,0.07) 0px 10px 20px` + `rgba(32,27,16,0.04) 0px 2px 5px`
+- Hero: `accentStrong @ 30%, 0px 10px 24px`
 
 ## 7. Do's and Don'ts
 
 ### Do
-- Use Slate Charcoal (#1E293B) for CTAs and links
-- Apply 12px radius on all buttons
-- Use display font for headings, UI font for body
+- Use evergreen for the one action on a screen.
+- Let P&L numbers carry the color weight (deep green/red, w700–800).
+- Keep empty states instructive — first-run card invites the first trade.
+- Keep the ad footer quiet and pinned to the bottom edge.
 
 ### Don't
-- Don't use pill buttons — 12px is the max radius for buttons
-- Don't use other colors outside the defined scale
+- Don't place advertising inside content flow or above the fold.
+- Don't scatter accent colors — one accent per screen, semantic colors
+  only for price sentiment and status.
+- Don't use 11px uppercase micro-labels for section names.
+- Don't return to cold slate/indigo tones; warmth is the brand.
 
 ## 8. Responsive Behavior
-Breakpoints: 375px, 425px, 640px, 768px, 1024px, 1280px, 1536px
+Breakpoints (logical dp): compact < 600 · medium 600–839 · expanded
+840–1199 · large ≥ 1200. Phones stay portrait; tablets/desktop unlock all
+orientations. Content capped at 720/960/1200dp per size class.
 
-## 9. Agent Prompt Guide
-
-### Quick Color Reference
-- Brand: Slate Charcoal (`#1E293B`)
-- Dark variant: `#0F172A`
-- Text: Near Black (`#101114`)
-- Secondary text: `#9497a9`
-- Background: White (`#ffffff`)
-
-### Example Component Prompts
-- "Create hero: white background. Display Font 48px weight 700, letter-spacing -1px. Charcoal CTA (#1E293B, 12px radius, 13px 16px padding)."
+## 9. Testing the system
+`test/ui_layout_regression_test.dart` pins the no-overflow guarantee at all
+four size classes (light + dark), the ad-footer placement, and the palette
+contract. `test/app_theme_accent_test.dart` pins the token hex values.

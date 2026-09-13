@@ -22,10 +22,7 @@ class FavoriteItem {
   final String symbol;
   final List<String> folderIds;
 
-  FavoriteItem({
-    required this.symbol,
-    required this.folderIds,
-  });
+  FavoriteItem({required this.symbol, required this.folderIds});
 
   FavoriteItem copyWith({String? symbol, List<String>? folderIds}) {
     return FavoriteItem(
@@ -34,10 +31,7 @@ class FavoriteItem {
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'symbol': symbol,
-    'folderIds': folderIds,
-  };
+  Map<String, dynamic> toJson() => {'symbol': symbol, 'folderIds': folderIds};
 
   factory FavoriteItem.fromJson(Map<String, dynamic> json) => FavoriteItem(
     symbol: json['symbol'],

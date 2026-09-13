@@ -2,16 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
+import '../models/account_tag.dart';
+// Reuses the shell's tab-switch notifier so an account-card tap can land the
+// user on the Journal tab pre-filtered to that account. `show` keeps the
+// circular import (main.dart owns HomeScreen) down to a single symbol.
+import '../main.dart' show MainTabRouter;
 import '../providers/trade_provider.dart';
-import '../providers/market_provider.dart';
 import '../providers/theme_provider.dart';
 import '../models/trade_entry.dart';
 import '../models/stock.dart';
+import '../models/trade_analytics.dart';
+import '../services/trade_analytics_calculator.dart';
 import '../theme/app_theme.dart';
 import '../utils/currency.dart';
 import '../utils/responsive.dart';
-import '../widgets/ad_banner.dart';
 import '../widgets/responsive_layout.dart';
+import 'account_management_screen.dart';
+import 'add_trade_screen.dart';
+import '../services/excel_export_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -19,45 +27,53 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tradeProvider = context.watch<TradeProvider>();
-    final marketProvider = context.watch<MarketProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final upColor = themeProvider.upColor;
-    final downColor = themeProvider.downColor;
- 
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.dashboard),
+        title: Text(l10n.appTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: l10n.accountManagement,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AccountManagementScreen(),
+              ),
+            ),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // M3: previously only market prices were re-fetched, leaving the
-          // dashboard stale if a trade was deleted on another device or a
-          // direct Hive edit. Refresh both in parallel so the spinner stops
-          // only when all data is fresh.
-          await marketProvider.refreshPrices();
           tradeProvider.loadTrades();
         },
         child: ResponsiveContainer(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl + 32),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.sm,
+              AppSpacing.lg,
+              AppSpacing.xxl + 32,
+            ),
             children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: AdBanner(),
-              ),
-              _buildPortfolioHero(context, tradeProvider, isDark, upColor, downColor),
+              _buildPortfolioHero(context, tradeProvider),
               const SizedBox(height: AppSpacing.xl),
-              _buildMarketIndices(context, marketProvider, isDark, upColor, downColor),
+              _buildAccountsStrip(context, tradeProvider, themeProvider),
               const SizedBox(height: AppSpacing.xl),
-              _buildStatsGrid(context, tradeProvider, isDark, upColor, downColor),
+              _buildQuickActions(context, tradeProvider),
               const SizedBox(height: AppSpacing.xl),
-              _buildOpenPositions(context, tradeProvider, isDark),
+              if (tradeProvider.trades.isEmpty)
+                _buildFirstRunCard(context)
+              else ...[
+                _buildStatsGrid(context, tradeProvider),
+                const SizedBox(height: AppSpacing.xl),
+                _buildOpenPositions(context, tradeProvider),
+                const SizedBox(height: AppSpacing.xl),
+                _buildRecentTrades(context, tradeProvider, themeProvider),
+              ],
               const SizedBox(height: AppSpacing.xl),
-              _buildRecentTrades(context, tradeProvider, isDark, upColor, downColor),
-              const SizedBox(height: AppSpacing.xl),
-              _buildReminders(context, tradeProvider, isDark),
             ],
           ),
         ),
@@ -65,19 +81,22 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPortfolioHero(BuildContext context, TradeProvider provider, bool isDark, Color upColor, Color downColor) {
+  /// Deep slate→indigo gradient hero showing aggregate realized P&L across
+  /// every account, the return against total invested capital, and a quick
+  /// position-count / invested-capital summary.
+  Widget _buildPortfolioHero(BuildContext context, TradeProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final isProfit = provider.totalProfitLoss >= 0;
-    
-    // Portfolio total aggregates across all closed trades — which may mix
-    // KRW and USD in pathological cases. Pick the dominant market (KRW if
-    // any Korean trade exists, else USD) so the symbol doesn't lie about
-    // the unit. Falls back to inferring from the first trade's symbol for
-    // legacy data that pre-dates the persisted market field.
+
+    // Portfolio totals may mix KRW and USD trades. Pick the dominant market
+    // (KRW if any Korean trade exists, else USD) so the symbol doesn't lie
+    // about the unit. Falls back to inferring from the first trade's symbol
+    // for legacy data that pre-dates the persisted market field.
     final closed = provider.closedPositions;
     MarketType? portfolioMarket;
-    if (closed.any((t) =>
-        t.market == MarketType.kospi || t.market == MarketType.kosdaq)) {
+    if (closed.any(
+      (t) => t.market == MarketType.kospi || t.market == MarketType.kosdaq,
+    )) {
       portfolioMarket = MarketType.kospi;
     } else if (closed.any((t) => t.market == MarketType.nasdaq)) {
       portfolioMarket = MarketType.nasdaq;
@@ -85,30 +104,34 @@ class HomeScreen extends StatelessWidget {
       portfolioMarket = inferMarketFromSymbol(closed.first.stockSymbol);
     }
 
-    // Modern Deep Gradient Theme using Slate Charcoal
-    final List<Color> gradientColors = isDark
-        ? [AppColors.purpleDark, AppColors.darkSurface] // Slate Dark to Surface Dark
-        : [AppColors.purple, AppColors.purpleDark]; // Slate Charcoal to Slate Dark
+    final totalInvested = provider.trades.fold<double>(
+      0.0,
+      (sum, t) => sum + t.entryPrice * t.quantity,
+    );
+    final returnPct = totalInvested > 0
+        ? provider.totalProfitLoss / totalInvested * 100
+        : 0.0;
 
-    final textPrimaryColor = Colors.white;
-    final textSecondaryColor = Colors.white.withValues(alpha: 0.7);
+    final textPrimary = Colors.white;
+    final textSecondary = Colors.white.withValues(alpha: 0.7);
 
-    // High contrast profit/loss indicator colors on deep gradient
-    final statusColor = isProfit ? const Color(0xFF34D399) : const Color(0xFFF87171); // Light Emerald Green vs Light Soft Red
-    final statusBgColor = statusColor.withValues(alpha: 0.15);
+    // High contrast profit/loss indicator colors on deep gradient.
+    final statusColor = isProfit
+        ? const Color(0xFF34D399)
+        : const Color(0xFFF87171);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient:  LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: gradientColors,
+          colors: [AppColors.heroGradientStart, AppColors.heroGradientEnd],
         ),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : AppColors.purple).withValues(alpha: isDark ? 0.4 : 0.2),
+            color: AppColors.heroGradientEnd.withValues(alpha: 0.35),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -118,12 +141,12 @@ class HomeScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.portfolioSummary.toUpperCase(),
+            l10n.portfolioSummary,
             style: TextStyle(
-              color: textSecondaryColor,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
+              color: textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.4,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -131,40 +154,45 @@ class HomeScreen extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              // Mirror the +/- prefix convention from the original code:
-              // positive gets a leading "+", negatives are carried by
-              // formatTradeMoney's own number formatting.
               '${isProfit ? '+' : ''}${formatTradeMoney(provider.totalProfitLoss, portfolioMarket)}',
               maxLines: 1,
               style: TextStyle(
-                fontSize: 34,
+                fontSize: 36,
                 fontWeight: FontWeight.w800,
-                color: textPrimaryColor,
-                letterSpacing: -0.5,
-                height: 1.1,
+                color: textPrimary,
+                letterSpacing: -0.8,
+                height: 1.05,
               ),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      isProfit
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
                       size: 14,
                       color: statusColor,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${provider.winRate.toStringAsFixed(1)}% ${l10n.winRate}',
+                      '${returnPct >= 0 ? '+' : ''}${returnPct.toStringAsFixed(1)}%',
                       style: TextStyle(
                         color: statusColor,
                         fontSize: 12,
@@ -174,6 +202,38 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
+              Text(
+                '${l10n.totalInvested} ${formatTradeMoney(totalInvested, portfolioMarket)}',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                '${l10n.winRate} ${provider.winRate.toStringAsFixed(1)}%',
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                l10n.completedTradesCount(provider.closedPositions.length),
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                l10n.openPositionsCount(provider.openPositionCount),
+                style: TextStyle(
+                  color: textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ],
@@ -181,35 +241,500 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context, TradeProvider provider, bool isDark, Color upColor, Color downColor) {
+  /// First-run invitation card shown instead of the metrics sections when
+  /// the journal is still empty. Guides the new user to the single most
+  /// valuable action — logging their first trade — instead of staring at
+  /// a wall of zeros.
+  Widget _buildFirstRunCard(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBorder;
-    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.accent, AppColors.accentStrong],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentStrong.withValues(alpha: 0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.edit_note_rounded,
+            size: 34,
+            color: AppColors.white.withValues(alpha: 0.9),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            l10n.noTradesYet,
+            style: TextStyle(
+              color: AppColors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.3,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AddTradeScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.add_rounded, size: 20),
+              label: Text(l10n.addTrade),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.white,
+                foregroundColor: AppColors.accentStrong,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _accountInvested(TradeProvider provider, String name) {
+    return provider.trades
+        .where((t) => t.accountTag == name)
+        .fold(0.0, (sum, t) => sum + t.entryPrice * t.quantity);
+  }
+
+  void _openJournalTab() {
+    MainTabRouter.jumpToJournal();
+  }
+
+  double _accountRealizedPnL(TradeProvider provider, String name) {
+    return provider.trades
+        .where((t) => t.accountTag == name && t.isClosed)
+        .fold(0.0, (sum, t) => sum + t.profitLoss);
+  }
+
+  int _accountOpenCount(TradeProvider provider, String name) {
+    return provider.trades
+        .where((t) => t.accountTag == name && !t.isClosed)
+        .length;
+  }
+
+  Color? _colorForTag(TradeProvider provider, String? tag) {
+    if (tag == null) return null;
+    for (final a in provider.accounts) {
+      if (a.name == tag && a.colorValue != null) return Color(a.colorValue!);
+    }
+    return null;
+  }
+
+  /// Horizontal quick-filter carousel: all-accounts chip, one card per
+  /// registered account, and an inline "add account" action.
+  Widget _buildAccountsStrip(
+    BuildContext context,
+    TradeProvider provider,
+    ThemeProvider themeProvider,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: Text(
+            l10n.myAccounts,
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.text,
+              letterSpacing: -0.3,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          height: 116,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            children: [
+              _buildAllAccountsCard(context, provider),
+              ...provider.accounts.map(
+                (a) => _buildAccountCard(context, provider, themeProvider, a),
+              ),
+              _buildAddAccountCard(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAllAccountsCard(BuildContext context, TradeProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final isProfit = provider.totalProfitLoss >= 0;
+    final pnlColor = isProfit
+        ? const Color(0xFF34D399)
+        : const Color(0xFFF87171);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        provider.setSelectedAccountTagFilter(null);
+        _openJournalTab();
+      },
+      child: Container(
+        width: 148,
+        margin: const EdgeInsets.only(right: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          gradient:  LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.accent, AppColors.accentStrong],
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                 Icon(
+                  Icons.public_rounded,
+                  size: 14,
+                  color: AppColors.white,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    l10n.allAccounts,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:  TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${provider.totalProfitLoss >= 0 ? '+' : ''}${NumberFormat('#,###').format(provider.totalProfitLoss)}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: pnlColor,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              l10n.openPositionsCount(provider.openPositionCount),
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.white.withValues(alpha: 0.75),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountCard(
+    BuildContext context,
+    TradeProvider provider,
+    ThemeProvider themeProvider,
+    AccountTag account,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final dotColor = account.colorValue != null
+        ? Color(account.colorValue!)
+        : AppColors.textMuted;
+    final pnl = _accountRealizedPnL(provider, account.name);
+    final openCount = _accountOpenCount(provider, account.name);
+    final pnlColor = pnl > 0
+        ? themeProvider.upColor
+        : pnl < 0
+        ? themeProvider.downColor
+        : AppColors.textMuted;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        provider.setSelectedAccountTagFilter(account.name);
+        _openJournalTab();
+      },
+      child: Container(
+        width: 148,
+        margin: const EdgeInsets.only(right: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppColors.cardShadow,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    account.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:  TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${pnl >= 0 ? '+' : ''}${NumberFormat('#,###').format(pnl)}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: pnlColor,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              l10n.openPositionsCount(openCount),
+              style:  TextStyle(fontSize: 11, color: AppColors.textMuted),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '${l10n.investedCapital} ${NumberFormat('#,###').format(_accountInvested(provider, account.name))}',
+                style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddAccountCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const AccountManagementScreen(),
+        ),
+      ),
+      child: Container(
+        width: 104,
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+             Icon(
+              Icons.add_circle_outline_rounded,
+              size: 20,
+              color: AppColors.accent,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.addAccount,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style:  TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.accent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One-tap action bar: record a trade, export the whole journal to
+  /// Excel-compatible CSV, or open the account registry. Mirrors the
+  /// "what would I do in my spreadsheet" flow: add a row, send the sheet,
+  /// or reorganize the workbook tabs.
+  Widget _buildQuickActions(BuildContext context, TradeProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+
+    Widget action({
+      required IconData icon,
+      required String label,
+      required Color color,
+      required VoidCallback onTap,
+    }) {
+      return Expanded(
+        child: Material(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.border),
+                boxShadow: AppColors.cardShadow,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 22, color: color),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        action(
+          icon: Icons.add_chart_rounded,
+          label: l10n.quickRecordTrade,
+          color: AppColors.accent,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const AddTradeScreen()),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        action(
+          icon: Icons.table_view_rounded,
+          label: l10n.exportToExcel,
+          color: AppColors.green,
+          onTap: () =>
+              ExcelExportService.showExportDialog(context, provider.trades),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        action(
+          icon: Icons.account_balance_rounded,
+          label: l10n.manageAccounts,
+          color: AppColors.royalBlue,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const AccountManagementScreen(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 2x2 quick metrics grid: trade count, win rate, profit factor (from the
+  /// shared analytics calculator) and average holding period.
+  Widget _buildStatsGrid(BuildContext context, TradeProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final summary = TradeAnalyticsCalculator.computeSummary(
+      provider.trades,
+      const TradeAnalyticsFilter(),
+    );
 
     final stats = [
-      _StatData(l10n.total, '${provider.totalTrades}', textColor, null),
-      _StatData(l10n.win, '${provider.winningTrades}', upColor, Icons.trending_up_rounded),
-      _StatData(l10n.loss, '${provider.losingTrades}', downColor, Icons.trending_down_rounded),
-      _StatData(l10n.winRate, '${provider.winRate.toStringAsFixed(0)}%', AppColors.purpleLight, Icons.percent_rounded),
+      _StatData(
+        l10n.totalTrades,
+        '${provider.totalTrades}',
+        AppColors.text,
+        Icons.receipt_long_rounded,
+      ),
+      _StatData(
+        l10n.winRate,
+        '${provider.winRate.toStringAsFixed(1)}%',
+        AppColors.blue,
+        Icons.percent_rounded,
+      ),
+      _StatData(
+        l10n.profitFactor,
+        summary.profitFactor.toStringAsFixed(2),
+        AppColors.accent,
+        Icons.compare_arrows_rounded,
+      ),
+      _StatData(
+        l10n.avgHoldingPeriod,
+        l10n.daysUnit(summary.averageHoldingDays.round()),
+        AppColors.orange,
+        Icons.schedule_rounded,
+      ),
     ];
 
     Widget buildStatTile(_StatData stat) {
       return Container(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.md,
+          horizontal: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
-          color: cardColor,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: borderColor),
+          border: Border.all(color: AppColors.border),
+          boxShadow: AppColors.cardShadow,
         ),
         child: Column(
           children: [
-            if (stat.icon != null) ...[
-              Icon(stat.icon, size: 16, color: stat.color),
-              const SizedBox(height: 4),
-            ] else
-              const SizedBox(height: 20),
+            Icon(stat.icon, size: 16, color: stat.color),
+            const SizedBox(height: 4),
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
@@ -223,10 +748,14 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               stat.label,
-              style: TextStyle(fontSize: 11, color: subColor, fontWeight: FontWeight.w500),
+              style:  TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -237,67 +766,62 @@ class HomeScreen extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isMediumOrUp = constraints.maxWidth >= Breakpoints.compact;
-        if (isMediumOrUp) {
-          final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
-          return Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: stats.map((stat) => SizedBox(
-              width: itemWidth,
-              child: buildStatTile(stat),
-            )).toList(),
-          );
-        }
-        return Row(
-          children: stats.map((stat) {
-            final isLast = stat == stats.last;
-            return Expanded(
-              child: Container(
-                margin: EdgeInsets.only(right: isLast ? 0 : AppSpacing.sm),
-                child: buildStatTile(stat),
-              ),
-            );
-          }).toList(),
+        // Always two columns → a compact 2x2 metrics grid.
+        final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
+        return Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: stats
+              .map(
+                (stat) =>
+                    SizedBox(width: itemWidth, child: buildStatTile(stat)),
+              )
+              .toList(),
         );
       },
     );
   }
 
-  Widget _buildOpenPositions(BuildContext context, TradeProvider provider, bool isDark) {
+  Widget _buildOpenPositions(BuildContext context, TradeProvider provider) {
     final l10n = AppLocalizations.of(context)!;
     final positions = provider.openPositions;
     if (positions.isEmpty) return const SizedBox();
 
-    final formatter = NumberFormat('#,###');
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-    final isMediumOrUp = context.isMediumOrUp;
+    final isTablet = context.isExpandedOrUp;
 
-    final items = positions.take(isMediumOrUp ? 6 : 3).map((trade) => _buildPositionRow(context, trade, formatter, textColor, subColor)).toList();
+    final items = positions
+        .take(isTablet ? 6 : 3)
+        .map((trade) => _buildPositionRow(context, provider, trade))
+        .toList();
 
     return _buildSectionCard(
       context,
       title: l10n.openPosition,
       count: positions.length,
-      isDark: isDark,
-      child: isMediumOrUp
-        ? LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
-              return Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: items.map((item) => SizedBox(width: itemWidth, child: item)).toList(),
-              );
-            },
-          )
-        : Column(children: items),
+      child: isTablet
+          ? LayoutBuilder(
+              builder: (context, constraints) {
+                final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
+                return Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: items
+                      .map((item) => SizedBox(width: itemWidth, child: item))
+                      .toList(),
+                );
+              },
+            )
+          : Column(children: items),
     );
   }
 
-  Widget _buildPositionRow(BuildContext context, TradeEntry trade, NumberFormat formatter, Color textColor, Color subColor) {
+  Widget _buildPositionRow(
+    BuildContext context,
+    TradeProvider provider,
+    TradeEntry trade,
+  ) {
     final l10n = AppLocalizations.of(context)!;
+    final market = trade.market ?? inferMarketFromSymbol(trade.stockSymbol);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
@@ -306,13 +830,19 @@ class HomeScreen extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: (trade.direction == TradeDirection.buy ? AppColors.green : AppColors.red).withValues(alpha: 0.15),
+              color: (trade.direction == TradeDirection.buy
+                  ? AppColors.greenBg
+                  : AppColors.redBg),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(
-              trade.direction == TradeDirection.buy ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+              trade.direction == TradeDirection.buy
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
               size: 16,
-              color: trade.direction == TradeDirection.buy ? AppColors.green : AppColors.red,
+              color: trade.direction == TradeDirection.buy
+                  ? AppColors.green
+                  : AppColors.red,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -324,65 +854,117 @@ class HomeScreen extends StatelessWidget {
                   trade.stockName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textColor),
+                  style:  TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.text,
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  // Infer market for legacy trades (market==null) so pre-
-                  // field trades still render with the right unit.
-                  '${formatTradeMoney(trade.entryPrice, trade.market ?? inferMarketFromSymbol(trade.stockSymbol))} \u00d7 ${trade.quantity}${l10n.sharesUnit}',
-                  style: TextStyle(fontSize: 12, color: subColor),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Flexible(
+                      child: _buildAccountBadge(
+                        context,
+                        provider,
+                        trade.accountTag,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        '${formatTradeMoney(trade.entryPrice, market)} \u00d7 ${trade.quantity}${l10n.sharesUnit}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:  TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Text(
-            formatTradeMoney(trade.entryPrice * trade.quantity, trade.market ?? inferMarketFromSymbol(trade.stockSymbol)),
-            maxLines: 1,
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: textColor),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                formatTradeMoney(trade.entryPrice * trade.quantity, market),
+                maxLines: 1,
+                style:  TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: AppColors.text,
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentTrades(BuildContext context, TradeProvider provider, bool isDark, Color upColor, Color downColor) {
+  Widget _buildRecentTrades(
+    BuildContext context,
+    TradeProvider provider,
+    ThemeProvider themeProvider,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final recent = provider.closedPositions.take(5).toList();
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-    final isMediumOrUp = context.isMediumOrUp;
+    final isTablet = context.isExpandedOrUp;
 
     return _buildSectionCard(
       context,
       title: l10n.recentTrades,
-      isDark: isDark,
       child: recent.isEmpty
-        ? _buildInlineEmpty(l10n.noTradesYet, subColor)
-        : isMediumOrUp
+          ? _buildInlineEmpty(l10n.noTradesYet, AppColors.textMuted)
+          : isTablet
           ? LayoutBuilder(
               builder: (context, constraints) {
                 final itemWidth = (constraints.maxWidth - AppSpacing.sm) / 2;
                 return Wrap(
                   spacing: AppSpacing.sm,
                   runSpacing: AppSpacing.sm,
-                  children: recent.map((trade) => SizedBox(
-                    width: itemWidth,
-                    child: _buildTradeRow(trade, textColor, subColor, upColor, downColor),
-                  )).toList(),
+                  children: recent
+                      .map(
+                        (trade) => SizedBox(
+                          width: itemWidth,
+                          child: _buildTradeRow(
+                            context,
+                            provider,
+                            trade,
+                            themeProvider,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 );
               },
             )
           : Column(
-              children: recent.map((trade) => _buildTradeRow(trade, textColor, subColor, upColor, downColor)).toList(),
+              children: recent
+                  .map(
+                    (trade) =>
+                        _buildTradeRow(context, provider, trade, themeProvider),
+                  )
+                  .toList(),
             ),
     );
   }
 
-  Widget _buildTradeRow(TradeEntry trade, Color textColor, Color subColor, Color upColor, Color downColor) {
+  Widget _buildTradeRow(
+    BuildContext context,
+    TradeProvider provider,
+    TradeEntry trade,
+    ThemeProvider themeProvider,
+  ) {
     final dateFormat = DateFormat('MM/dd');
     final isWin = trade.result == TradeResult.success;
-    final resultColor = isWin ? upColor : downColor;
+    final resultColor = isWin ? themeProvider.upColor : themeProvider.downColor;
+    final market = trade.market ?? inferMarketFromSymbol(trade.stockSymbol);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -396,95 +978,135 @@ class HomeScreen extends StatelessWidget {
                   trade.stockName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textColor),
+                  style:  TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.text,
+                  ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  dateFormat.format(trade.exitDate ?? trade.entryDate),
-                  style: TextStyle(fontSize: 12, color: subColor),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Flexible(
+                      child: _buildAccountBadge(
+                        context,
+                        provider,
+                        trade.accountTag,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        dateFormat.format(trade.exitDate ?? trade.entryDate),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:  TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${trade.profitLoss >= 0 ? '+' : ''}${formatTradeMoney(trade.profitLoss, trade.market ?? inferMarketFromSymbol(trade.stockSymbol))}',
-                maxLines: 1,
-                style: TextStyle(
-                  color: resultColor,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${trade.profitLoss >= 0 ? '+' : ''}${formatTradeMoney(trade.profitLoss, market)}',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: resultColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${trade.profitLossPercent >= 0 ? '+' : ''}${trade.profitLossPercent.toStringAsFixed(2)}%',
-                maxLines: 1,
-                style: TextStyle(
-                  color: resultColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${trade.profitLossPercent >= 0 ? '+' : ''}${trade.profitLossPercent.toStringAsFixed(2)}%',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: resultColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildReminders(BuildContext context, TradeProvider provider, bool isDark) {
+  /// Small pill badge identifying the account a trade belongs to. Shows the
+  /// account's own color dot when set; falls back to muted styling for
+  /// unassigned trades.
+  Widget _buildAccountBadge(
+    BuildContext context,
+    TradeProvider provider,
+    String? tag,
+  ) {
     final l10n = AppLocalizations.of(context)!;
-    final unread = provider.reminders.where((r) => !r.isRead).take(3).toList();
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-
-    return _buildSectionCard(
-      context,
-      title: l10n.reminders,
-      count: unread.length,
-      isDark: isDark,
-      child: unread.isEmpty
-        ? _buildInlineEmpty(l10n.noPendingReminders, subColor)
-        : Column(
-            children: unread.map((r) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs + 2),
-              child: Row(
-                children: [
-                  const Icon(Icons.notifications_active_rounded, color: AppColors.purpleLight, size: 18),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Text(
-                      r.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: textColor),
-                    ),
-                  ),
-                  Text(
-                    DateFormat('MM/dd').format(r.remindAt),
-                    style: TextStyle(fontSize: 12, color: subColor, fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            )).toList(),
+    final dotColor = _colorForTag(provider, tag);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: dotColor ?? AppColors.textMuted,
+              shape: BoxShape.circle,
+            ),
           ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              tag ?? l10n.unassignedAccount,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style:  TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSectionCard(BuildContext context, {required String title, int? count, required bool isDark, required Widget child}) {
-    final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.lightBorder;
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-
+  Widget _buildSectionCard(
+    BuildContext context, {
+    required String title,
+    int? count,
+    required Widget child,
+  }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -496,20 +1118,28 @@ class HomeScreen extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: textColor),
+                  style:  TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.text,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
               if (count != null && count > 0)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
-                    color: AppColors.purple.withValues(alpha: 0.12),
+                    color: AppColors.accentSubtle,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     '$count',
-                    style: const TextStyle(
-                      color: AppColors.purpleLight,
+                    style:  TextStyle(
+                      color: AppColors.accent,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -517,7 +1147,7 @@ class HomeScreen extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           child,
         ],
       ),
@@ -525,10 +1155,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   /// Centered inline message used inside section cards when the section's
-  /// content list is empty (e.g., recent trades, reminders). Kept private;
-  /// only this screen needs it. The original audit-marked-removed was a
-  /// false positive — the two call sites (_buildRecentTrades and
-  /// _buildReminders) DO use it.
+  /// content list is empty (e.g., recent trades).
   Widget _buildInlineEmpty(String message, Color subColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -541,128 +1168,13 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildMarketIndices(BuildContext context, MarketProvider provider, bool isDark, Color upColor, Color downColor) {
-    final l10n = AppLocalizations.of(context)!;
-    final indices = provider.indices;
-    if (indices.isEmpty) return const SizedBox.shrink();
-
-    final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final borderColor = isDark ? Colors.white.withValues(alpha: 0.04) : AppColors.lightBorder.withValues(alpha: 0.4);
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-    final subColor = isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-          child: Text(
-            l10n.marketIndices.toUpperCase(),
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: isDark ? textSecondaryColor(isDark) : subColor,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SizedBox(
-          height: 86,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: indices.length,
-            itemBuilder: (context, index) {
-              final idx = indices[index];
-              final isUp = idx.changePrice >= 0;
-              final color = isUp ? upColor : downColor;
-              final sign = isUp ? '+' : '';
-
-              return Container(
-                width: 146,
-                margin: EdgeInsets.only(
-                  right: index == indices.length - 1 ? 0 : AppSpacing.md,
-                ),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: borderColor),
-                  boxShadow: isDark ? null : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          idx.name,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            color: textColor,
-                          ),
-                        ),
-                        Icon(
-                          isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                          size: 14,
-                          color: color,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      idx.currentPrice.toStringAsFixed(2),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: textColor,
-                        letterSpacing: -0.3,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '$sign${idx.changePrice.toStringAsFixed(2)} ($sign${idx.changePercent.toStringAsFixed(2)}%)',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: color,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color textSecondaryColor(bool isDark) {
-    return Colors.white.withValues(alpha: 0.7);
-  }
 }
 
 class _StatData {
   final String label;
   final String value;
   final Color color;
-  final IconData? icon;
+  final IconData icon;
 
   _StatData(this.label, this.value, this.color, this.icon);
 }

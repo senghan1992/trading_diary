@@ -61,9 +61,9 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
     final ok = await UpdateService.instance.openStore(config: config);
     if (!mounted) return;
     if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.updateStoreOpenError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_l10n.updateStoreOpenError)));
     }
   }
 
@@ -71,7 +71,9 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final config = _config;
-    final message = config?.messageFor(Localizations.localeOf(context).languageCode);
+    final message = config?.messageFor(
+      Localizations.localeOf(context).languageCode,
+    );
 
     return PopScope(
       canPop: false,

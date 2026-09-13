@@ -43,11 +43,8 @@ class _DialogTrigger extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: ElevatedButton(
-        onPressed: () => UpdateDialog.show(
-          context,
-          required: required,
-          message: message,
-        ),
+        onPressed: () =>
+            UpdateDialog.show(context, required: required, message: message),
         child: const Text('Open dialog'),
       ),
     );
@@ -56,11 +53,12 @@ class _DialogTrigger extends StatelessWidget {
 
 void main() {
   group('UpdateDialog', () {
-    testWidgets('optional dialog renders "Update available" title and Later',
-        (tester) async {
-      await tester.pumpWidget(_harness(
-        child: const _DialogTrigger(required: false),
-      ));
+    testWidgets('optional dialog renders "Update available" title and Later', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(child: const _DialogTrigger(required: false)),
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
@@ -69,11 +67,12 @@ void main() {
       expect(find.text('Update'), findsOneWidget);
     });
 
-    testWidgets('required dialog renders "Update required" and hides Later',
-        (tester) async {
-      await tester.pumpWidget(_harness(
-        child: const _DialogTrigger(required: true),
-      ));
+    testWidgets('required dialog renders "Update required" and hides Later', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(child: const _DialogTrigger(required: true)),
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
@@ -84,43 +83,48 @@ void main() {
       expect(find.text('Later'), findsNothing);
     });
 
-    testWidgets('uses the provided message verbatim when non-empty',
-        (tester) async {
-      await tester.pumpWidget(_harness(
-        child: const _DialogTrigger(
-          required: false,
-          message: '새 기능이 추가되었어요. 업데이트해보세요!',
+    testWidgets('uses the provided message verbatim when non-empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(
+          child: const _DialogTrigger(
+            required: false,
+            message: '새 기능이 추가되었어요. 업데이트해보세요!',
+          ),
         ),
-      ));
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('새 기능이 추가되었어요. 업데이트해보세요!'),
-        findsOneWidget,
-      );
+      expect(find.text('새 기능이 추가되었어요. 업데이트해보세요!'), findsOneWidget);
     });
 
-    testWidgets('falls back to localized default when message is null',
-        (tester) async {
-      await tester.pumpWidget(_harness(
-        child: const _DialogTrigger(required: false),
-      ));
+    testWidgets('falls back to localized default when message is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _harness(child: const _DialogTrigger(required: false)),
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
       // English default from app_en.arb
       expect(
-        find.text('A new version is available. Please update for the best experience.'),
+        find.text(
+          'A new version is available. Please update for the best experience.',
+        ),
         findsOneWidget,
       );
     });
 
     testWidgets('Korean locale renders Korean strings', (tester) async {
-      await tester.pumpWidget(_harness(
-        locale: const Locale('ko'),
-        child: const _DialogTrigger(required: false),
-      ));
+      await tester.pumpWidget(
+        _harness(
+          locale: const Locale('ko'),
+          child: const _DialogTrigger(required: false),
+        ),
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
@@ -130,9 +134,9 @@ void main() {
     });
 
     testWidgets('tapping Later pops the optional dialog', (tester) async {
-      await tester.pumpWidget(_harness(
-        child: const _DialogTrigger(required: false),
-      ));
+      await tester.pumpWidget(
+        _harness(child: const _DialogTrigger(required: false)),
+      );
       await tester.tap(find.text('Open dialog'));
       await tester.pumpAndSettle();
 
@@ -145,8 +149,9 @@ void main() {
   });
 
   group('ForceUpdateScreen', () {
-    testWidgets('renders the blocking surface with update + retry controls',
-        (tester) async {
+    testWidgets('renders the blocking surface with update + retry controls', (
+      tester,
+    ) async {
       // Pass a config so the screen doesn't try to fetch on mount.
       final config = UpdateConfig.fromJson({
         'latest_version': '2.0.0',
@@ -155,7 +160,9 @@ void main() {
         'update_message_en': 'Critical security fix.',
       });
 
-      await tester.pumpWidget(_harness(child: ForceUpdateScreen(config: config)));
+      await tester.pumpWidget(
+        _harness(child: ForceUpdateScreen(config: config)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Update required'), findsOneWidget);
@@ -164,8 +171,7 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
 
-    testWidgets('honors the locale for the fallback body text',
-        (tester) async {
+    testWidgets('honors the locale for the fallback body text', (tester) async {
       // Config without a message — should use the localized default.
       final config = UpdateConfig.fromJson({
         'latest_version': '2.0.0',
@@ -173,17 +179,16 @@ void main() {
         'force_update': true,
       });
 
-      await tester.pumpWidget(_harness(
-        locale: const Locale('ko'),
-        child: ForceUpdateScreen(config: config),
-      ));
+      await tester.pumpWidget(
+        _harness(
+          locale: const Locale('ko'),
+          child: ForceUpdateScreen(config: config),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('업데이트 필요'), findsOneWidget);
-      expect(
-        find.text('더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.'),
-        findsOneWidget,
-      );
+      expect(find.text('더 나은 경험을 위해 최신 버전으로 업데이트해 주세요.'), findsOneWidget);
     });
   });
 }

@@ -82,10 +82,7 @@ class ResponsiveContainer extends StatelessWidget {
           // `Expanded`). Fall back to the global screen width so we can still
           // pick a sensible cap.
           final screenWidth = MediaQuery.sizeOf(context).width;
-          return _Centered(
-            maxWidth: _capForWidth(screenWidth),
-            child: child,
-          );
+          return _Centered(maxWidth: _capForWidth(screenWidth), child: child);
         }
         return _Centered(maxWidth: _capForWidth(available), child: child);
       },
@@ -93,12 +90,12 @@ class ResponsiveContainer extends StatelessWidget {
   }
 
   double _capForWidth(double width) => selectMaxWidth(
-        width,
-        compactMaxWidth: compactMaxWidth,
-        mediumMaxWidth: mediumMaxWidth,
-        expandedMaxWidth: expandedMaxWidth,
-        largeMaxWidth: largeMaxWidth,
-      );
+    width,
+    compactMaxWidth: compactMaxWidth,
+    mediumMaxWidth: mediumMaxWidth,
+    expandedMaxWidth: expandedMaxWidth,
+    largeMaxWidth: largeMaxWidth,
+  );
 }
 
 class _Centered extends StatelessWidget {
@@ -136,7 +133,11 @@ class _Centered extends StatelessWidget {
 /// factor). When set, [overridePadding] wins and the breakpoint reads are
 /// skipped.
 class ResponsivePadding extends StatelessWidget {
-  const ResponsivePadding({super.key, required this.child, this.overridePadding});
+  const ResponsivePadding({
+    super.key,
+    required this.child,
+    this.overridePadding,
+  });
 
   final Widget child;
 
@@ -203,7 +204,8 @@ class ResponsiveSheet {
     bool isScrollControlled = true,
   }) {
     final sizeClass = Breakpoints.of(context);
-    final useDialog = sizeClass == WindowSizeClass.expanded ||
+    final useDialog =
+        sizeClass == WindowSizeClass.expanded ||
         sizeClass == WindowSizeClass.large;
 
     if (useDialog) {

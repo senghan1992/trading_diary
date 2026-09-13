@@ -1,103 +1,86 @@
+import '../utils/hangul_util.dart';
+
+/// Which market a traded stock belongs to.
+///
+/// Drives the currency unit and decimal precision used when rendering
+/// prices in trade rows (integer won for KOSPI/KOSDAQ, 2dp USD for NASDAQ).
+/// Nullable usages (`MarketType?`) mean the market was not specified —
+/// including trades filed under the "기타/가상자산" bucket. Display sites
+/// fall back to `inferMarketFromSymbol` (see `lib/utils/currency.dart`)
+/// for legacy entries without a stored market.
 enum MarketType { kospi, kosdaq, nasdaq }
 
-class Stock {
-  final String symbol;
+/// Represents an individual stock or asset for autocomplete and market mapping.
+class StockItem {
+  final String code;
   final String name;
-  final String? nameKr;
   final MarketType market;
-  final double currentPrice;
-  final double changePrice;
-  final double changePercent;
-  final double openPrice;
-  final double highPrice;
-  final double lowPrice;
-  final double prevClose;
-  final int volume;
-  final bool isFavorite;
+  final String chosung;
+  final String decomposed;
 
-  Stock({
-    required this.symbol,
+  StockItem({
+    required this.code,
     required this.name,
-    this.nameKr,
     required this.market,
-    required this.currentPrice,
-    required this.changePrice,
-    required this.changePercent,
-    required this.openPrice,
-    required this.highPrice,
-    required this.lowPrice,
-    required this.prevClose,
-    required this.volume,
-    this.isFavorite = false,
-  });
+    String? chosung,
+    String? decomposed,
+  })  : chosung = chosung ?? HangulUtil.extractChosung(name),
+        decomposed = decomposed ?? HangulUtil.decompose(name);
 
-  bool get isPositive => changePrice >= 0;
-
-  Stock copyWith({
-    String? symbol,
-    String? name,
-    String? nameKr,
-    MarketType? market,
-    double? currentPrice,
-    double? changePrice,
-    double? changePercent,
-    double? openPrice,
-    double? highPrice,
-    double? lowPrice,
-    double? prevClose,
-    int? volume,
-    bool? isFavorite,
-  }) {
-    return Stock(
-      symbol: symbol ?? this.symbol,
-      name: name ?? this.name,
-      nameKr: nameKr ?? this.nameKr,
-      market: market ?? this.market,
-      currentPrice: currentPrice ?? this.currentPrice,
-      changePrice: changePrice ?? this.changePrice,
-      changePercent: changePercent ?? this.changePercent,
-      openPrice: openPrice ?? this.openPrice,
-      highPrice: highPrice ?? this.highPrice,
-      lowPrice: lowPrice ?? this.lowPrice,
-      prevClose: prevClose ?? this.prevClose,
-      volume: volume ?? this.volume,
-      isFavorite: isFavorite ?? this.isFavorite,
+  factory StockItem.fromJson(Map<String, dynamic> json) {
+    final name = (json['name'] as String? ?? '').trim();
+    return StockItem(
+      code: (json['code'] as String? ?? '').trim(),
+      name: name,
+      market: _parseMarket(json['market']),
+      chosung: json['chosung'] as String?,
+      decomposed: json['decomposed'] as String?,
     );
   }
-}
 
-class MarketIndex {
-  final String name;
-  final String symbol;
-  final double currentPrice;
-  final double changePrice;
-  final double changePercent;
+  Map<String, dynamic> toJson() => {
+        'code': code,
+        'name': name,
+        'market': market.name,
+        'chosung': chosung,
+      };
 
-  MarketIndex({
-    required this.name,
-    required this.symbol,
-    required this.currentPrice,
-    required this.changePrice,
-    required this.changePercent,
-  });
+  /// Matches against query by code, name, Korean initial consonant (chosung),
+  /// or decomposed Jamo sequence (supporting typing-in-progress states).
+  bool matches(String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
 
-  bool get isPositive => changePrice >= 0;
-}
+    // 1. Check code prefix or inclusion
+    if (code.toLowerCase().contains(q)) return true;
 
-class DailyPrice {
-  final DateTime date;
-  final double open;
-  final double high;
-  final double low;
-  final double close;
-  final int volume;
+    // 2. Multi-angle Korean and text matching
+    return HangulUtil.matches(
+      name,
+      q,
+      targetChosung: chosung,
+      targetDecomposed: decomposed,
+    );
+  }
 
-  DailyPrice({
-    required this.date,
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-  });
+  static MarketType _parseMarket(dynamic market) {
+    if (market is String) {
+      final lower = market.trim().toLowerCase();
+      if (lower == 'kosdaq' || lower.contains('kq')) return MarketType.kosdaq;
+      if (lower == 'nasdaq' || lower.contains('nas') || lower == 'us') return MarketType.nasdaq;
+      return MarketType.kospi;
+    }
+    return MarketType.kospi;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StockItem &&
+          runtimeType == other.runtimeType &&
+          code == other.code &&
+          market == other.market;
+
+  @override
+  int get hashCode => code.hashCode ^ market.hashCode;
 }

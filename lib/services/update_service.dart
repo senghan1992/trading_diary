@@ -82,9 +82,26 @@ class UpdateConfig {
 /// Singleton because the check is cheap to repeat and we don't want to
 /// re-fetch from the network on every screen transition.
 class UpdateService {
-  UpdateService._();
+  UpdateService._() : _client = null, _overrideUrl = null;
   static final UpdateService instance = UpdateService._();
 
+  /// Test seam: lets a unit test inject a `MockClient` and an explicit
+  /// URL so the network path can be exercised without hitting the real
+  /// CDN. Production callers use the singleton via [UpdateService.instance].
+  @visibleForTesting
+  factory UpdateService.forTest({required http.Client client, String? url}) {
+    return UpdateService._internal(client, url);
+  }
+
+  /// Internal constructor used by [forTest]. Production code goes
+  /// through [UpdateService.instance] which preserves the singleton.
+  UpdateService._internal(this._client, this._overrideUrl);
+
+  // Tests inject these via the [forTest] seam; production leaves both
+  // null so [getConfig] falls back to a default [http.Client] +
+  // [AppConstants.appConfigUrl].
+  final http.Client? _client;
+  final String? _overrideUrl;
   UpdateConfig? _cached;
   DateTime? _cachedAt;
 
@@ -93,9 +110,11 @@ class UpdateService {
   /// fails, we don't retry until it expires.
   static const Duration _cacheDuration = Duration(minutes: 30);
 
-  /// Hard network timeout for the config fetch. Kept tight so a slow CDN
-  /// doesn't make users stare at a splash screen.
-  static const Duration _fetchTimeout = Duration(seconds: 5);
+  /// Hard network timeout for the config fetch. Halved from 5s → 2s so a
+  /// slow CDN can no longer make users stare at a splash screen. When the
+  /// fetch fails the user still gets the app (`getConfig` returns null),
+  /// so a 2s ceiling is well below the perceived-stall threshold.
+  static const Duration _fetchTimeout = Duration(seconds: 2);
 
   /// Returns the currently installed app version as a semver string,
   /// e.g. "1.0.0". The "+N" build suffix from `pubspec.yaml` is dropped.
@@ -105,8 +124,14 @@ class UpdateService {
   }
 
   /// Returns the cached config if it's still fresh, otherwise re-fetches.
-  /// On any error (network, parse, missing fields) returns null so the
+  /// Returns null on any error (network, parse, missing fields) so the
   /// caller can fall through to a normal app start.
+  ///
+  /// Cache-first: a previously-fetched config is returned immediately
+  /// without hitting the network (saves a splash-screen network round
+  /// trip on every warm start). Forced refresh always re-fetches.
+  /// Non-200 / non-JSON / network errors don't overwrite a known-good
+  /// cache — the cached value stays usable.
   ///
   /// When [AppConstants.appConfigUrl] still points at the example.com
   /// placeholder, returns null without making a network call - this is how
@@ -121,14 +146,15 @@ class UpdateService {
       return cached;
     }
 
-    final url = AppConstants.appConfigUrl;
+    final url = _overrideUrl ?? AppConstants.appConfigUrl;
     if (url.isEmpty || url.startsWith('https://example.com')) {
-      // Host hasn't been configured yet. Don't try to fetch the placeholder.
-      return null;
+      // Host hasn't been configured yet. Don't try to fetch the
+      // placeholder. If a previous successful fetch exists, keep using it.
+      return cached;
     }
-
+    final client = _client ?? http.Client();
     try {
-      final response = await http
+      final response = await client
           .get(Uri.parse(url), headers: const {'Accept': 'application/json'})
           .timeout(_fetchTimeout);
 
@@ -136,13 +162,13 @@ class UpdateService {
         debugPrint(
           'UpdateService: config fetch returned ${response.statusCode}',
         );
-        return null;
+        return cached; // keep cache on transient HTTP failure
       }
 
       final body = jsonDecode(response.body);
       if (body is! Map<String, dynamic>) {
         debugPrint('UpdateService: config payload is not a JSON object');
-        return null;
+        return cached;
       }
       final config = UpdateConfig.fromJson(body);
       _cached = config;
@@ -150,10 +176,10 @@ class UpdateService {
       return config;
     } on TimeoutException {
       debugPrint('UpdateService: config fetch timed out');
-      return null;
+      return cached;
     } catch (e) {
       debugPrint('UpdateService: config fetch error - $e');
-      return null;
+      return cached;
     }
   }
 
@@ -163,8 +189,7 @@ class UpdateService {
     final cmpMin = _compareVersions(currentVersion, config.minimumVersion);
     if (cmpMin < 0) return UpdateStatus.required;
     if (config.forceUpdate) return UpdateStatus.required;
-    final cmpLatest =
-        _compareVersions(currentVersion, config.latestVersion);
+    final cmpLatest = _compareVersions(currentVersion, config.latestVersion);
     if (cmpLatest < 0) return UpdateStatus.optional;
     return UpdateStatus.upToDate;
   }
@@ -180,10 +205,7 @@ class UpdateService {
   ///
   /// Returns false when no URL is resolvable or the platform can't launch
   /// it - callers should treat that as a hard error and log it.
-  Future<bool> openStore({
-    String? overrideUrl,
-    UpdateConfig? config,
-  }) async {
+  Future<bool> openStore({String? overrideUrl, UpdateConfig? config}) async {
     final url = overrideUrl ?? _resolveStoreUrl(config);
     if (url == null || url.isEmpty) {
       debugPrint('UpdateService.openStore: no URL resolvable');

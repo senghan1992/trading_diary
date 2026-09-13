@@ -79,8 +79,9 @@ class _OrientationLockState extends State<OrientationLock> {
 /// the device is currently oriented.
 WindowSizeClass _classifyFromView(BuildContext context) {
   final mq = MediaQueryData.fromView(View.of(context));
-  final shortestSide =
-      mq.size.width < mq.size.height ? mq.size.width : mq.size.height;
+  final shortestSide = mq.size.width < mq.size.height
+      ? mq.size.width
+      : mq.size.height;
   return Breakpoints.classify(shortestSide);
 }
 

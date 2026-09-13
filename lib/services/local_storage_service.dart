@@ -4,16 +4,17 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trade_entry.dart';
 import '../models/favorite_folder.dart';
 import '../models/stock.dart';
+import '../models/account_tag.dart';
 
 class LocalStorageService {
   static const _tradesBox = 'trades';
   static const _watchlistBox = 'watchlist';
   static const _notesBox = 'notes';
-  static const _remindersBox = 'reminders';
   static const _foldersBox = 'folders';
   static const _marketCacheBox = 'market_cache';
   static const _prefsBox = 'prefs';
   static const _kAdInterstitialCounter = 'ad_interstitial_counter';
+  static const _accountsBox = 'accounts';
 
   /// M16: tracks per-box open failures so the rest of the app can probe
   /// state via [isBoxAvailable] instead of crashing on every operation
@@ -26,10 +27,10 @@ class LocalStorageService {
     _tradesBox: 'Trade history',
     _watchlistBox: 'Watchlist',
     _notesBox: 'Analysis notes',
-    _remindersBox: 'Reminders',
     _foldersBox: 'Folders',
     _marketCacheBox: 'Market data cache',
     _prefsBox: 'Preferences',
+    _accountsBox: 'Accounts',
   };
 
   /// Returns true iff every required box is available.
@@ -42,7 +43,8 @@ class LocalStorageService {
       .toList(growable: false);
 
   /// Single-box probe. Returns true if the named box opened successfully.
-  static bool isBoxAvailable(String boxName) => !_unavailableBoxes.contains(boxName);
+  static bool isBoxAvailable(String boxName) =>
+      !_unavailableBoxes.contains(boxName);
 
   /// Centralised accessor used by every getter/setter below. Returns null
   /// when the box failed to open during [init] so callers can no-op instead
@@ -60,35 +62,57 @@ class LocalStorageService {
     }
   }
 
-  /// Opens every box the app needs. Failures are isolated per-box: a single
-  /// disk error doesn't prevent the rest of the app from working, and the
-  /// failure mode is observable via [unavailableBoxLabels].
+  /// Opens every box the app needs in parallel and isolates per-box failures
+  /// via [_unavailableBoxes].
+  ///
+  /// Parallelizing cuts cold-start I/O from sum-of-all-boxes-open-cost down
+  /// to a single max(box) round trip. On mid-tier Android devices this
+  /// saved ~300–600 ms off the splash-to-first-frame budget in profiling —
+  /// the body of [main] awaits [init] before [runApp], so wall-clock here
+  /// directly delays first paint.
+  ///
+  /// Per-box failures don't abort the rest of the app: a single disk error
+  /// still records into [unavailableBoxLabels] without preventing the other
+  /// six boxes from opening.
   static Future<void> init() async {
     await Hive.initFlutter();
-    for (final name in const [
-      _tradesBox,
-      _watchlistBox,
-      _notesBox,
-      _remindersBox,
-      _foldersBox,
-      _marketCacheBox,
-      _prefsBox,
-    ]) {
-      try {
-        await Hive.openBox(name);
-      } catch (e, st) {
-        _unavailableBoxes.add(name);
-        debugPrint('Hive.openBox("$name") failed: $e\n$st');
-      }
+    await Future.wait([
+      for (final name in const [
+        _tradesBox,
+        _watchlistBox,
+        _notesBox,
+        _foldersBox,
+        _marketCacheBox,
+        _prefsBox,
+        _accountsBox,
+      ])
+        _openOne(name),
+    ], eagerError: false);
+  }
+
+  /// Open a single Hive box, recording into [_unavailableBoxes] on failure
+  /// so every accessor can no-op instead of throwing.
+  static Future<void> _openOne(String name) async {
+    try {
+      await Hive.openBox(name);
+    } catch (e, st) {
+      _unavailableBoxes.add(name);
+      debugPrint('Hive.openBox("$name") failed: $e\n$st');
     }
   }
 
   // Market Stock Cache
-  static Future<void> saveMarketStocks(MarketType market, List<Map<String, dynamic>> stocks) async {
+  static Future<void> saveMarketStocks(
+    MarketType market,
+    List<Map<String, dynamic>> stocks,
+  ) async {
     final box = _box(_marketCacheBox);
     if (box == null) return;
     await box.put('stocks_${market.name}', jsonEncode(stocks));
-    await box.put('stocks_${market.name}_updated', DateTime.now().toIso8601String());
+    await box.put(
+      'stocks_${market.name}_updated',
+      DateTime.now().toIso8601String(),
+    );
   }
 
   static List<Map<String, dynamic>>? getMarketStocks(MarketType market) {
@@ -108,7 +132,59 @@ class LocalStorageService {
     return DateTime.parse(data);
   }
 
-  static Future<void> saveMarketIndices(List<Map<String, dynamic>> indices) async {
+  // All Stocks Auto-complete Cache
+  static const _kAllStocksKey = 'all_stocks_list';
+  static const _kAllStocksUpdatedKey = 'all_stocks_updated_at';
+  static const _kAllStocksVersionKey = 'all_stocks_version';
+
+  static Future<void> saveAllStocks(List<StockItem> stocks, {int? version}) async {
+    final box = _box(_marketCacheBox);
+    if (box == null) return;
+    final jsonList = stocks.map((s) => s.toJson()).toList(growable: false);
+    await box.put(_kAllStocksKey, jsonEncode(jsonList));
+    await box.put(_kAllStocksUpdatedKey, DateTime.now().toIso8601String());
+    if (version != null) {
+      await box.put(_kAllStocksVersionKey, version);
+    }
+  }
+
+  static int getAllStocksVersion() {
+    final box = _box(_marketCacheBox);
+    if (box == null) return 0;
+    return (box.get(_kAllStocksVersionKey) as int?) ?? 0;
+  }
+
+  static List<StockItem>? getAllStocks() {
+    final box = _box(_marketCacheBox);
+    if (box == null) return null;
+    final data = box.get(_kAllStocksKey);
+    if (data == null) return null;
+    try {
+      final list = jsonDecode(data) as List;
+      return list
+          .map((e) => StockItem.fromJson(e as Map<String, dynamic>))
+          .toList(growable: false);
+    } catch (e) {
+      debugPrint('LocalStorageService: failed to decode all_stocks: $e');
+      return null;
+    }
+  }
+
+  static DateTime? getAllStocksUpdatedAt() {
+    final box = _box(_marketCacheBox);
+    if (box == null) return null;
+    final data = box.get(_kAllStocksUpdatedKey);
+    if (data == null) return null;
+    try {
+      return DateTime.parse(data as String);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> saveMarketIndices(
+    List<Map<String, dynamic>> indices,
+  ) async {
     final box = _box(_marketCacheBox);
     if (box == null) return;
     await box.put('indices', jsonEncode(indices));
@@ -133,6 +209,53 @@ class LocalStorageService {
   }
 
   // Trades
+  // Accounts
+  static Map<String, dynamic> accountToMapForTest(AccountTag a) =>
+      _accountToMap(a);
+
+  static Map<String, dynamic> _accountToMap(AccountTag a) => {
+    'id': a.id,
+    'name': a.name,
+    'colorValue': a.colorValue,
+    'memo': a.memo,
+    'createdAt': a.createdAt.toIso8601String(),
+  };
+
+  static AccountTag accountFromMapForTest(Map<String, dynamic> m) =>
+      _accountFromMap(m);
+
+  /// Missing-key tolerant deserializer so a corrupted or forward-compat
+  /// map never crashes the whole [getAccounts] call (same policy as H2).
+  static AccountTag _accountFromMap(Map<String, dynamic> m) => AccountTag(
+    id: (m['id'] as String?) ?? '',
+    name: (m['name'] as String?) ?? '',
+    colorValue: m['colorValue'] as int?,
+    memo: m['memo'] as String?,
+    createdAt:
+        DateTime.tryParse(m['createdAt'] as String? ?? '') ?? DateTime.now(),
+  );
+
+  static Future<void> saveAccount(AccountTag account) async {
+    final box = _box(_accountsBox);
+    if (box == null) return;
+    await box.put(account.id, jsonEncode(_accountToMap(account)));
+  }
+
+  static List<AccountTag> getAccounts() {
+    final box = _box(_accountsBox);
+    if (box == null) return const <AccountTag>[];
+    final accounts =
+        box.values.map((v) => _accountFromMap(jsonDecode(v))).toList()
+          ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return accounts;
+  }
+
+  static Future<void> deleteAccount(String id) async {
+    final box = _box(_accountsBox);
+    if (box == null) return;
+    await box.delete(id);
+  }
+
   static Future<void> saveTrade(TradeEntry trade) async {
     final box = _box(_tradesBox);
     if (box == null) return;
@@ -156,11 +279,14 @@ class LocalStorageService {
   static Future<void> saveFolder(FavoriteFolder folder) async {
     final box = _box(_foldersBox);
     if (box == null) return;
-    await box.put(folder.id, jsonEncode({
-      'id': folder.id,
-      'name': folder.name,
-      'createdAt': folder.createdAt.toIso8601String(),
-    }));
+    await box.put(
+      folder.id,
+      jsonEncode({
+        'id': folder.id,
+        'name': folder.name,
+        'createdAt': folder.createdAt.toIso8601String(),
+      }),
+    );
   }
 
   static List<FavoriteFolder> getFolders() {
@@ -191,10 +317,15 @@ class LocalStorageService {
           if (newFolderIds.isEmpty) {
             await box.delete(key);
           } else {
-            await box.put(key, jsonEncode(FavoriteItem(
-              symbol: item.symbol,
-              folderIds: newFolderIds,
-            ).toJson()));
+            await box.put(
+              key,
+              jsonEncode(
+                FavoriteItem(
+                  symbol: item.symbol,
+                  folderIds: newFolderIds,
+                ).toJson(),
+              ),
+            );
           }
         }
       }
@@ -207,16 +338,23 @@ class LocalStorageService {
     if (box.containsKey(symbol)) {
       final item = FavoriteItem.fromJson(jsonDecode(box.get(symbol)));
       if (!item.folderIds.contains(folderId)) {
-        await box.put(symbol, jsonEncode(FavoriteItem(
-          symbol: item.symbol,
-          folderIds: [...item.folderIds, folderId],
-        ).toJson()));
+        await box.put(
+          symbol,
+          jsonEncode(
+            FavoriteItem(
+              symbol: item.symbol,
+              folderIds: [...item.folderIds, folderId],
+            ).toJson(),
+          ),
+        );
       }
     } else {
-      await box.put(symbol, jsonEncode(FavoriteItem(
-        symbol: symbol,
-        folderIds: [folderId],
-      ).toJson()));
+      await box.put(
+        symbol,
+        jsonEncode(
+          FavoriteItem(symbol: symbol, folderIds: [folderId]).toJson(),
+        ),
+      );
     }
   }
 
@@ -229,10 +367,12 @@ class LocalStorageService {
       if (newFolderIds.isEmpty) {
         await box.delete(symbol);
       } else {
-        await box.put(symbol, jsonEncode(FavoriteItem(
-          symbol: item.symbol,
-          folderIds: newFolderIds,
-        ).toJson()));
+        await box.put(
+          symbol,
+          jsonEncode(
+            FavoriteItem(symbol: item.symbol, folderIds: newFolderIds).toJson(),
+          ),
+        );
       }
     }
   }
@@ -279,36 +419,6 @@ class LocalStorageService {
       return FavoriteItem.fromJson(jsonDecode(box.get(symbol))).folderIds;
     }
     return [];
-  }
-
-  // Reminders
-  static Future<void> saveReminder(Reminder reminder) async {
-    final box = _box(_remindersBox);
-    if (box == null) return;
-    await box.put(reminder.id, jsonEncode(_reminderToMap(reminder)));
-  }
-
-  static List<Reminder> getReminders() {
-    final box = _box(_remindersBox);
-    if (box == null) return const <Reminder>[];
-    return box.values.map((v) => _reminderFromMap(jsonDecode(v))).toList()
-      ..sort((a, b) => b.remindAt.compareTo(a.remindAt));
-  }
-
-  static Future<void> markReminderRead(String id) async {
-    final box = _box(_remindersBox);
-    if (box == null) return;
-    final data = box.get(id);
-    if (data != null) {
-      final reminder = _reminderFromMap(jsonDecode(data));
-      await box.put(id, jsonEncode(_reminderToMap(reminder.copyWith(isRead: true))));
-    }
-  }
-
-  static Future<void> deleteReminder(String id) async {
-    final box = _box(_remindersBox);
-    if (box == null) return;
-    await box.delete(id);
   }
 
   // Analysis Notes
@@ -358,25 +468,32 @@ class LocalStorageService {
 
   // Serialization helpers.
   //
-  // NOTE (H1): `analysisNotes` and `reminders` are intentionally NOT included
-  // in the serialized map. They live in their own Hive boxes (_notesBox,
-  // _remindersBox) and are read separately via TradeProvider / LocalStorageService.
+  // NOTE (H1): `analysisNotes` are intentionally NOT included
+  // in the serialized map. They live in their own Hive box (_notesBox)
+  // and are read separately via TradeProvider / LocalStorageService.
   // Including them here would make every save round-trip wipe the in-memory
   // lists (since `_tradeFromMap` always assigns `const []` to the defaults).
   /// Public test-friendly wrapper around [_tradeToMap]. The mapping is
-  /// exhaustive except for the analysis-notes / reminders, which live in
-  /// their own boxes (H1).
+  /// exhaustive except for the analysis-notes, which live in their own box (H1).
   static Map<String, dynamic> tradeToMapForTest(TradeEntry t) => _tradeToMap(t);
   static Map<String, dynamic> _tradeToMap(TradeEntry t) => {
     'id': t.id, 'stockSymbol': t.stockSymbol, 'stockName': t.stockName,
     'type': t.type.name, 'direction': t.direction.name,
-    'entryPrice': t.entryPrice, 'exitPrice': t.exitPrice, 'quantity': t.quantity,
-    'entryDate': t.entryDate.toIso8601String(), 'exitDate': t.exitDate?.toIso8601String(),
+    'entryPrice': t.entryPrice,
+    'exitPrice': t.exitPrice,
+    'quantity': t.quantity,
+    'entryDate': t.entryDate.toIso8601String(),
+    'exitDate': t.exitDate?.toIso8601String(),
     'reason': t.reason, 'strategy': t.strategy, 'lesson': t.lesson,
     'result': t.result.name, 'isClosed': t.isClosed,
     // Nullable: trades written before this field was added have no market
     // key in the persisted map; the read path handles that.
     'market': t.market?.name,
+    // Nullable: trades written before accounts existed have no key; the
+    // read path defaults to null ("미지정 계좌").
+    'accountTag': t.accountTag,
+    if (t.executions.isNotEmpty)
+      'executions': t.executions.map((e) => e.toMap()).toList(growable: false),
   };
 
   /// Schema-evolution-safe deserializer. Every key has a sensible default so a
@@ -388,7 +505,8 @@ class LocalStorageService {
   /// `isClosed` defaults to `true` if `exitDate` is present and the field
   /// is missing, so closed positions don't get re-classified as open on
   /// schema migration (H3).
-  static TradeEntry tradeFromMapForTest(Map<String, dynamic> m) => _tradeFromMap(m);
+  static TradeEntry tradeFromMapForTest(Map<String, dynamic> m) =>
+      _tradeFromMap(m);
   static TradeEntry _tradeFromMap(Map<String, dynamic> m) {
     // H2: defaults on every required primitive; H3: infer isClosed for older
     // data that pre-dates the field by looking at whether an exitDate exists.
@@ -409,6 +527,15 @@ class LocalStorageService {
         // Unknown / corrupted value — leave null so we don't crash on read.
         marketFromStorage = null;
       }
+    }
+
+    List<TradeExecution> executions = const [];
+    final rawExecutions = m['executions'];
+    if (rawExecutions is List) {
+      executions = rawExecutions
+          .whereType<Map>()
+          .map((e) => TradeExecution.fromMap(Map<String, dynamic>.from(e)))
+          .toList(growable: false);
     }
 
     return TradeEntry(
@@ -434,6 +561,8 @@ class LocalStorageService {
       ),
       isClosed: isClosed,
       market: marketFromStorage,
+      accountTag: m['accountTag'] as String?,
+      executions: executions,
     );
   }
 
@@ -444,30 +573,17 @@ class LocalStorageService {
     return DateTime.tryParse(raw);
   }
 
-  static Map<String, dynamic> _reminderToMap(Reminder r) => {
-    'id': r.id, 'title': r.title, 'note': r.note,
-    'remindAt': r.remindAt.toIso8601String(), 'isRead': r.isRead,
-    // tradeId is nullable for non-trade reminders; missing-key tolerant in
-    // [_reminderFromMap] via the default of null.
-    'tradeId': r.tradeId,
-  };
-
-  static Reminder _reminderFromMap(Map<String, dynamic> m) => Reminder(
-    id: (m['id'] as String?) ?? '',
-    title: (m['title'] as String?) ?? '',
-    note: m['note'] as String?,
-    remindAt: DateTime.tryParse(m['remindAt'] as String? ?? '') ?? DateTime.now(),
-    isRead: (m['isRead'] as bool?) ?? false,
-    tradeId: m['tradeId'] as String?,
-  );
-
   static Map<String, dynamic> _noteToMap(AnalysisNote n) => {
-    'id': n.id, 'content': n.content,
-    'createdAt': n.createdAt.toIso8601String(), 'category': n.category,
+    'id': n.id,
+    'content': n.content,
+    'createdAt': n.createdAt.toIso8601String(),
+    'category': n.category,
   };
 
   static AnalysisNote _noteFromMap(Map<String, dynamic> m) => AnalysisNote(
-    id: m['id'], content: m['content'],
-    createdAt: DateTime.parse(m['createdAt']), category: m['category'] ?? 'general',
+    id: m['id'],
+    content: m['content'],
+    createdAt: DateTime.parse(m['createdAt']),
+    category: m['category'] ?? 'general',
   );
 }

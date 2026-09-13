@@ -116,12 +116,6 @@ abstract class AppLocalizations {
   /// **'복습'**
   String get review;
 
-  /// No description provided for @searchPlaceholder.
-  ///
-  /// In ko, this message translates to:
-  /// **'종목명 또는 코드로 검색'**
-  String get searchPlaceholder;
-
   /// No description provided for @resultFilter.
   ///
   /// In ko, this message translates to:
@@ -206,12 +200,6 @@ abstract class AppLocalizations {
   /// **'수익 비율'**
   String get winRate;
 
-  /// No description provided for @marketIndices.
-  ///
-  /// In ko, this message translates to:
-  /// **'시장 지수'**
-  String get marketIndices;
-
   /// No description provided for @recentTrades.
   ///
   /// In ko, this message translates to:
@@ -235,18 +223,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'거래 내역이 없습니다. 일지를 작성해보세요!'**
   String get noTradesYet;
-
-  /// No description provided for @reminders.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림'**
-  String get reminders;
-
-  /// No description provided for @noPendingReminders.
-  ///
-  /// In ko, this message translates to:
-  /// **'대기 중인 알림 없음'**
-  String get noPendingReminders;
 
   /// No description provided for @learning.
   ///
@@ -470,12 +446,6 @@ abstract class AppLocalizations {
   /// **'영어'**
   String get english;
 
-  /// No description provided for @theme.
-  ///
-  /// In ko, this message translates to:
-  /// **'테마'**
-  String get theme;
-
   /// No description provided for @dark.
   ///
   /// In ko, this message translates to:
@@ -499,24 +469,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'화면 모드와 색상 설정'**
   String get displaySubtitle;
-
-  /// No description provided for @screenMode.
-  ///
-  /// In ko, this message translates to:
-  /// **'화면 모드'**
-  String get screenMode;
-
-  /// No description provided for @darkMode.
-  ///
-  /// In ko, this message translates to:
-  /// **'다크 모드'**
-  String get darkMode;
-
-  /// No description provided for @lightMode.
-  ///
-  /// In ko, this message translates to:
-  /// **'라이트 모드'**
-  String get lightMode;
 
   /// No description provided for @priceColors.
   ///
@@ -704,54 +656,6 @@ abstract class AppLocalizations {
   /// **'배운 점'**
   String get whatILearned;
 
-  /// No description provided for @search.
-  ///
-  /// In ko, this message translates to:
-  /// **'검색'**
-  String get search;
-
-  /// No description provided for @noResults.
-  ///
-  /// In ko, this message translates to:
-  /// **'결과 없음'**
-  String get noResults;
-
-  /// No description provided for @kospi.
-  ///
-  /// In ko, this message translates to:
-  /// **'KOSPI'**
-  String get kospi;
-
-  /// No description provided for @kosdaq.
-  ///
-  /// In ko, this message translates to:
-  /// **'KOSDAQ'**
-  String get kosdaq;
-
-  /// No description provided for @nasdaq.
-  ///
-  /// In ko, this message translates to:
-  /// **'NASDAQ'**
-  String get nasdaq;
-
-  /// No description provided for @sp500.
-  ///
-  /// In ko, this message translates to:
-  /// **'S&P 500'**
-  String get sp500;
-
-  /// No description provided for @dowJones.
-  ///
-  /// In ko, this message translates to:
-  /// **'다우 존스'**
-  String get dowJones;
-
-  /// No description provided for @lastUpdated.
-  ///
-  /// In ko, this message translates to:
-  /// **'마지막 업데이트'**
-  String get lastUpdated;
-
   /// No description provided for @error.
   ///
   /// In ko, this message translates to:
@@ -788,18 +692,6 @@ abstract class AppLocalizations {
   /// **'포지션'**
   String get position;
 
-  /// No description provided for @positionEntry.
-  ///
-  /// In ko, this message translates to:
-  /// **'포지션 진입'**
-  String get positionEntry;
-
-  /// No description provided for @positionClose.
-  ///
-  /// In ko, this message translates to:
-  /// **'포지션 청산'**
-  String get positionClose;
-
   /// No description provided for @openPosition.
   ///
   /// In ko, this message translates to:
@@ -812,29 +704,11 @@ abstract class AppLocalizations {
   /// **'매도완료'**
   String get closedPosition;
 
-  /// No description provided for @currentPrice.
-  ///
-  /// In ko, this message translates to:
-  /// **'현재가'**
-  String get currentPrice;
-
-  /// No description provided for @unrealizedPL.
-  ///
-  /// In ko, this message translates to:
-  /// **'미실현 손익'**
-  String get unrealizedPL;
-
   /// No description provided for @marketValue.
   ///
   /// In ko, this message translates to:
   /// **'시장가치'**
   String get marketValue;
-
-  /// No description provided for @holdings.
-  ///
-  /// In ko, this message translates to:
-  /// **'보유'**
-  String get holdings;
 
   /// No description provided for @addPosition.
   ///
@@ -847,24 +721,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'청산 기록하기'**
   String get closePosition;
-
-  /// No description provided for @simulate.
-  ///
-  /// In ko, this message translates to:
-  /// **'시뮬레이션'**
-  String get simulate;
-
-  /// No description provided for @trackPosition.
-  ///
-  /// In ko, this message translates to:
-  /// **'트래킹'**
-  String get trackPosition;
-
-  /// No description provided for @updatePosition.
-  ///
-  /// In ko, this message translates to:
-  /// **'포지션 수정'**
-  String get updatePosition;
 
   /// No description provided for @entryOnly.
   ///
@@ -901,96 +757,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'분석 메모 추가'**
   String get addAnalysisNote;
-
-  /// No description provided for @reminderTitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 제목'**
-  String get reminderTitle;
-
-  /// No description provided for @reminderNote.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 메모'**
-  String get reminderNote;
-
-  /// No description provided for @reminderDate.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 날짜'**
-  String get reminderDate;
-
-  /// No description provided for @setReminder.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 설정'**
-  String get setReminder;
-
-  /// No description provided for @reminderFor.
-  ///
-  /// In ko, this message translates to:
-  /// **'리마인드'**
-  String get reminderFor;
-
-  /// No description provided for @deleteReminder.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 삭제'**
-  String get deleteReminder;
-
-  /// No description provided for @deleteReminderConfirm.
-  ///
-  /// In ko, this message translates to:
-  /// **'이 알림을 삭제할까요? 더 이상 발송되지 않습니다.'**
-  String get deleteReminderConfirm;
-
-  /// No description provided for @notifications.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림'**
-  String get notifications;
-
-  /// No description provided for @notificationsSubtitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'거래 리마인드 및 복습 알림'**
-  String get notificationsSubtitle;
-
-  /// No description provided for @notificationsEnabled.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 활성화'**
-  String get notificationsEnabled;
-
-  /// No description provided for @notificationsEnabledSubtitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'거래, 복습, 포지션에 대한 알림을 받습니다'**
-  String get notificationsEnabledSubtitle;
-
-  /// No description provided for @notificationsPermissionDenied.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 권한이 꺼져 있습니다. 눌러서 설정으로 이동하세요.'**
-  String get notificationsPermissionDenied;
-
-  /// No description provided for @notificationsOpenSettings.
-  ///
-  /// In ko, this message translates to:
-  /// **'설정 열기'**
-  String get notificationsOpenSettings;
-
-  /// No description provided for @notificationsReschedule.
-  ///
-  /// In ko, this message translates to:
-  /// **'대기 중인 알림 재등록'**
-  String get notificationsReschedule;
-
-  /// No description provided for @notificationsRescheduleDone.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 {count}개가 등록되었습니다'**
-  String notificationsRescheduleDone(int count);
 
   /// No description provided for @tabOverview.
   ///
@@ -1280,54 +1046,6 @@ abstract class AppLocalizations {
   /// **'작성한 기록'**
   String get writtenNotes;
 
-  /// No description provided for @setRemindersLabel.
-  ///
-  /// In ko, this message translates to:
-  /// **'설정된 알림'**
-  String get setRemindersLabel;
-
-  /// No description provided for @noRemindersSet.
-  ///
-  /// In ko, this message translates to:
-  /// **'아직 설정된 알림이 없습니다'**
-  String get noRemindersSet;
-
-  /// No description provided for @newReminderHeader.
-  ///
-  /// In ko, this message translates to:
-  /// **'새 알림 설정'**
-  String get newReminderHeader;
-
-  /// No description provided for @reminderTitleHint.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 제목 (예: 3일 후 종목 재확인)'**
-  String get reminderTitleHint;
-
-  /// No description provided for @reminderNoteHint.
-  ///
-  /// In ko, this message translates to:
-  /// **'메모 (선택사항)'**
-  String get reminderNoteHint;
-
-  /// No description provided for @enterReminderTitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 제목을 입력하세요'**
-  String get enterReminderTitle;
-
-  /// No description provided for @reminderSetFormat.
-  ///
-  /// In ko, this message translates to:
-  /// **'{date} 알림이 설정되었습니다'**
-  String reminderSetFormat(String date);
-
-  /// No description provided for @reminderOverdue.
-  ///
-  /// In ko, this message translates to:
-  /// **'지남'**
-  String get reminderOverdue;
-
   /// No description provided for @emptyOpenPositions.
   ///
   /// In ko, this message translates to:
@@ -1339,36 +1057,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'완료된 거래가 없습니다'**
   String get emptyClosedTrades;
-
-  /// No description provided for @snoozeOneDay.
-  ///
-  /// In ko, this message translates to:
-  /// **'1일 연기'**
-  String get snoozeOneDay;
-
-  /// No description provided for @snoozeOneWeek.
-  ///
-  /// In ko, this message translates to:
-  /// **'1주 연기'**
-  String get snoozeOneWeek;
-
-  /// No description provided for @snoozeOneMonth.
-  ///
-  /// In ko, this message translates to:
-  /// **'1달 연기'**
-  String get snoozeOneMonth;
-
-  /// No description provided for @snoozeThreeMonths.
-  ///
-  /// In ko, this message translates to:
-  /// **'3달 연기'**
-  String get snoozeThreeMonths;
-
-  /// No description provided for @snoozePickerTitle.
-  ///
-  /// In ko, this message translates to:
-  /// **'알림 연기'**
-  String get snoozePickerTitle;
 
   /// 인앱 업데이트 다이얼로그의 실행 버튼 라벨
   ///
@@ -1411,6 +1099,576 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'스토어를 열 수 없습니다. 잠시 후 다시 시도해주세요.'**
   String get updateStoreOpenError;
+
+  /// No description provided for @analytics.
+  ///
+  /// In ko, this message translates to:
+  /// **'집계'**
+  String get analytics;
+
+  /// No description provided for @tabAnalyticsSummary.
+  ///
+  /// In ko, this message translates to:
+  /// **'투자 집계'**
+  String get tabAnalyticsSummary;
+
+  /// No description provided for @tabTradeCalendar.
+  ///
+  /// In ko, this message translates to:
+  /// **'매매 캘린더'**
+  String get tabTradeCalendar;
+
+  /// No description provided for @periodAll.
+  ///
+  /// In ko, this message translates to:
+  /// **'전체'**
+  String get periodAll;
+
+  /// No description provided for @period1Y.
+  ///
+  /// In ko, this message translates to:
+  /// **'1년'**
+  String get period1Y;
+
+  /// No description provided for @period6M.
+  ///
+  /// In ko, this message translates to:
+  /// **'6개월'**
+  String get period6M;
+
+  /// No description provided for @period1M.
+  ///
+  /// In ko, this message translates to:
+  /// **'1개월'**
+  String get period1M;
+
+  /// No description provided for @period1W.
+  ///
+  /// In ko, this message translates to:
+  /// **'1주일'**
+  String get period1W;
+
+  /// No description provided for @marketAll.
+  ///
+  /// In ko, this message translates to:
+  /// **'모든 시장'**
+  String get marketAll;
+
+  /// No description provided for @marketDomestic.
+  ///
+  /// In ko, this message translates to:
+  /// **'국내 (KRX)'**
+  String get marketDomestic;
+
+  /// No description provided for @marketUS.
+  ///
+  /// In ko, this message translates to:
+  /// **'미국 (US)'**
+  String get marketUS;
+
+  /// No description provided for @profitFactor.
+  ///
+  /// In ko, this message translates to:
+  /// **'손익비'**
+  String get profitFactor;
+
+  /// No description provided for @payoffRatio.
+  ///
+  /// In ko, this message translates to:
+  /// **'수익/손실 비율'**
+  String get payoffRatio;
+
+  /// No description provided for @avgWin.
+  ///
+  /// In ko, this message translates to:
+  /// **'평균 수익'**
+  String get avgWin;
+
+  /// No description provided for @avgLoss.
+  ///
+  /// In ko, this message translates to:
+  /// **'평균 손실'**
+  String get avgLoss;
+
+  /// No description provided for @avgHoldingPeriod.
+  ///
+  /// In ko, this message translates to:
+  /// **'평균 보유 기간'**
+  String get avgHoldingPeriod;
+
+  /// No description provided for @daysUnit.
+  ///
+  /// In ko, this message translates to:
+  /// **'{days}일'**
+  String daysUnit(int days);
+
+  /// No description provided for @winStreakFormat.
+  ///
+  /// In ko, this message translates to:
+  /// **'{count}연승'**
+  String winStreakFormat(int count);
+
+  /// No description provided for @lossStreakFormat.
+  ///
+  /// In ko, this message translates to:
+  /// **'{count}연패'**
+  String lossStreakFormat(int count);
+
+  /// No description provided for @bestTradeLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'최고 수익'**
+  String get bestTradeLabel;
+
+  /// No description provided for @worstTradeLabel.
+  ///
+  /// In ko, this message translates to:
+  /// **'최대 손실'**
+  String get worstTradeLabel;
+
+  /// No description provided for @cumulativePnLChart.
+  ///
+  /// In ko, this message translates to:
+  /// **'누적 실현 손익 추이'**
+  String get cumulativePnLChart;
+
+  /// No description provided for @monthlyPnLChart.
+  ///
+  /// In ko, this message translates to:
+  /// **'월별 실현 손익'**
+  String get monthlyPnLChart;
+
+  /// No description provided for @winLossDistribution.
+  ///
+  /// In ko, this message translates to:
+  /// **'승패 분포'**
+  String get winLossDistribution;
+
+  /// No description provided for @stockRankings.
+  ///
+  /// In ko, this message translates to:
+  /// **'종목별 성과 랭킹'**
+  String get stockRankings;
+
+  /// No description provided for @strategyPerformance.
+  ///
+  /// In ko, this message translates to:
+  /// **'전략별 성과 분석'**
+  String get strategyPerformance;
+
+  /// No description provided for @weekdayPatterns.
+  ///
+  /// In ko, this message translates to:
+  /// **'요일별 매매 패턴'**
+  String get weekdayPatterns;
+
+  /// No description provided for @topGainers.
+  ///
+  /// In ko, this message translates to:
+  /// **'수익 상위 종목'**
+  String get topGainers;
+
+  /// No description provided for @topLosers.
+  ///
+  /// In ko, this message translates to:
+  /// **'손실 상위 종목'**
+  String get topLosers;
+
+  /// No description provided for @emptyAnalyticsTitle.
+  ///
+  /// In ko, this message translates to:
+  /// **'집계할 매매 데이터가 없습니다'**
+  String get emptyAnalyticsTitle;
+
+  /// No description provided for @emptyAnalyticsSubtitle.
+  ///
+  /// In ko, this message translates to:
+  /// **'일지에 매매를 기록하면 다각적인 투자 집계와 분석을 확인할 수 있습니다.'**
+  String get emptyAnalyticsSubtitle;
+
+  /// No description provided for @uncategorisedStrategy.
+  ///
+  /// In ko, this message translates to:
+  /// **'(미분류)'**
+  String get uncategorisedStrategy;
+
+  /// No description provided for @tradeTypeAll.
+  ///
+  /// In ko, this message translates to:
+  /// **'전체 계좌'**
+  String get tradeTypeAll;
+
+  /// No description provided for @noClosedTrades.
+  ///
+  /// In ko, this message translates to:
+  /// **'선택한 기간에 완료된 거래가 없습니다'**
+  String get noClosedTrades;
+
+  /// No description provided for @infinitySymbol.
+  ///
+  /// In ko, this message translates to:
+  /// **'∞'**
+  String get infinitySymbol;
+
+  /// No description provided for @accountTag.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 태그'**
+  String get accountTag;
+
+  /// No description provided for @accountManagement.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 및 태그 관리'**
+  String get accountManagement;
+
+  /// No description provided for @allAccounts.
+  ///
+  /// In ko, this message translates to:
+  /// **'전체 계좌'**
+  String get allAccounts;
+
+  /// No description provided for @unassignedAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'미지정'**
+  String get unassignedAccount;
+
+  /// No description provided for @accountPerformance.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌별 손익 분석'**
+  String get accountPerformance;
+
+  /// No description provided for @addAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'새 계좌 추가'**
+  String get addAccount;
+
+  /// No description provided for @editAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 수정'**
+  String get editAccount;
+
+  /// No description provided for @deleteAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 삭제'**
+  String get deleteAccount;
+
+  /// No description provided for @accountName.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌명'**
+  String get accountName;
+
+  /// No description provided for @accountProfitLoss.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 손익'**
+  String get accountProfitLoss;
+
+  /// No description provided for @selectAccountTag.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 선택 / 계좌 태그'**
+  String get selectAccountTag;
+
+  /// No description provided for @accountNameHint.
+  ///
+  /// In ko, this message translates to:
+  /// **'예: 키움증권 메인'**
+  String get accountNameHint;
+
+  /// No description provided for @accountMemoHint.
+  ///
+  /// In ko, this message translates to:
+  /// **'메모 (선택)'**
+  String get accountMemoHint;
+
+  /// No description provided for @deleteAccountConfirmTitle.
+  ///
+  /// In ko, this message translates to:
+  /// **'이 계좌를 삭제할까요?'**
+  String get deleteAccountConfirmTitle;
+
+  /// No description provided for @deleteAccountConfirmBody.
+  ///
+  /// In ko, this message translates to:
+  /// **'기존 거래 기록은 유지되며, 해당 거래는 미지정 계좌로 표시될 수 있습니다.'**
+  String get deleteAccountConfirmBody;
+
+  /// No description provided for @noAccountsRegistered.
+  ///
+  /// In ko, this message translates to:
+  /// **'등록된 계좌가 없습니다. 새 계좌을 추가해보세요.'**
+  String get noAccountsRegistered;
+
+  /// No description provided for @tradesCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'{count}건'**
+  String tradesCount(int count);
+
+  /// No description provided for @openPositionsCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'보유 {count}건'**
+  String openPositionsCount(int count);
+
+  /// No description provided for @avgReturn.
+  ///
+  /// In ko, this message translates to:
+  /// **'평균 수익률'**
+  String get avgReturn;
+
+  /// No description provided for @viewTradesForAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'거래 내역 보기'**
+  String get viewTradesForAccount;
+
+  /// No description provided for @myAccounts.
+  ///
+  /// In ko, this message translates to:
+  /// **'내 계좌'**
+  String get myAccounts;
+
+  /// No description provided for @totalInvested.
+  ///
+  /// In ko, this message translates to:
+  /// **'총 매수금액'**
+  String get totalInvested;
+
+  /// No description provided for @recentStocks.
+  ///
+  /// In ko, this message translates to:
+  /// **'최근 종목'**
+  String get recentStocks;
+
+  /// No description provided for @investedCapital.
+  ///
+  /// In ko, this message translates to:
+  /// **'투자 원금'**
+  String get investedCapital;
+
+  /// No description provided for @recoveredAmount.
+  ///
+  /// In ko, this message translates to:
+  /// **'회수 금액'**
+  String get recoveredAmount;
+
+  /// No description provided for @heldForDaysFormat.
+  ///
+  /// In ko, this message translates to:
+  /// **'{days}일간 보유'**
+  String heldForDaysFormat(int days);
+
+  /// No description provided for @priceMovement.
+  ///
+  /// In ko, this message translates to:
+  /// **'가격 변동'**
+  String get priceMovement;
+
+  /// No description provided for @marketEtc.
+  ///
+  /// In ko, this message translates to:
+  /// **'기타/가상자산'**
+  String get marketEtc;
+
+  /// No description provided for @exportToExcel.
+  ///
+  /// In ko, this message translates to:
+  /// **'엑셀(CSV)로 내보내기'**
+  String get exportToExcel;
+
+  /// No description provided for @exportCsvDescription.
+  ///
+  /// In ko, this message translates to:
+  /// **'Excel·한셀·구글 스프레드시트에서 바로 열리는 UTF-8 CSV'**
+  String get exportCsvDescription;
+
+  /// No description provided for @exportCopyClipboard.
+  ///
+  /// In ko, this message translates to:
+  /// **'클립보드로 복사'**
+  String get exportCopyClipboard;
+
+  /// No description provided for @exportCopiedSnack.
+  ///
+  /// In ko, this message translates to:
+  /// **'엑셀(CSV) 데이터가 클립보드에 복사되었습니다.'**
+  String get exportCopiedSnack;
+
+  /// No description provided for @exportTradeCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'총 {count}건의 거래가 포함됩니다.'**
+  String exportTradeCount(int count);
+
+  /// No description provided for @themeMode.
+  ///
+  /// In ko, this message translates to:
+  /// **'테마 모드'**
+  String get themeMode;
+
+  /// No description provided for @themeModeSystem.
+  ///
+  /// In ko, this message translates to:
+  /// **'시스템'**
+  String get themeModeSystem;
+
+  /// No description provided for @themeModeLight.
+  ///
+  /// In ko, this message translates to:
+  /// **'라이트'**
+  String get themeModeLight;
+
+  /// No description provided for @themeModeDark.
+  ///
+  /// In ko, this message translates to:
+  /// **'다크'**
+  String get themeModeDark;
+
+  /// No description provided for @brokerAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'증권사 선택'**
+  String get brokerAccount;
+
+  /// No description provided for @accountType.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 구분'**
+  String get accountType;
+
+  /// No description provided for @accountTypeCash.
+  ///
+  /// In ko, this message translates to:
+  /// **'위탁계좌'**
+  String get accountTypeCash;
+
+  /// No description provided for @accountTypeIsa.
+  ///
+  /// In ko, this message translates to:
+  /// **'ISA 계좌'**
+  String get accountTypeIsa;
+
+  /// No description provided for @accountTypePension.
+  ///
+  /// In ko, this message translates to:
+  /// **'연금저축'**
+  String get accountTypePension;
+
+  /// No description provided for @accountTypeIrp.
+  ///
+  /// In ko, this message translates to:
+  /// **'IRP'**
+  String get accountTypeIrp;
+
+  /// No description provided for @accountTypeCma.
+  ///
+  /// In ko, this message translates to:
+  /// **'CMA'**
+  String get accountTypeCma;
+
+  /// No description provided for @quickAddAccount.
+  ///
+  /// In ko, this message translates to:
+  /// **'새 계좌 추가'**
+  String get quickAddAccount;
+
+  /// No description provided for @addTradeOnDate.
+  ///
+  /// In ko, this message translates to:
+  /// **'{month}월 {day}일에 매매 기록하기'**
+  String addTradeOnDate(int month, int day);
+
+  /// No description provided for @tradesOnDate.
+  ///
+  /// In ko, this message translates to:
+  /// **'{month}월 {day}일 거래'**
+  String tradesOnDate(int month, int day);
+
+  /// No description provided for @quickRecordTrade.
+  ///
+  /// In ko, this message translates to:
+  /// **'매매 기록하기'**
+  String get quickRecordTrade;
+
+  /// No description provided for @manageAccounts.
+  ///
+  /// In ko, this message translates to:
+  /// **'계좌 관리'**
+  String get manageAccounts;
+
+  /// No description provided for @accountsOverview.
+  ///
+  /// In ko, this message translates to:
+  /// **'증권사/계좌별 현황'**
+  String get accountsOverview;
+
+  /// No description provided for @openPositions.
+  ///
+  /// In ko, this message translates to:
+  /// **'보유 포지션'**
+  String get openPositions;
+
+  /// No description provided for @totalReturnPercent.
+  ///
+  /// In ko, this message translates to:
+  /// **'총 수익률'**
+  String get totalReturnPercent;
+
+  /// No description provided for @completedTrades.
+  ///
+  /// In ko, this message translates to:
+  /// **'완료 거래'**
+  String get completedTrades;
+
+  /// No description provided for @holdingsCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'보유 종목'**
+  String get holdingsCount;
+
+  /// No description provided for @completedTradesCount.
+  ///
+  /// In ko, this message translates to:
+  /// **'완료 거래 {count}건'**
+  String completedTradesCount(int count);
+
+  /// No description provided for @searchTrades.
+  ///
+  /// In ko, this message translates to:
+  /// **'종목명·전략·메모 검색'**
+  String get searchTrades;
+
+  /// No description provided for @sortBy.
+  ///
+  /// In ko, this message translates to:
+  /// **'정렬'**
+  String get sortBy;
+
+  /// No description provided for @sortByProfit.
+  ///
+  /// In ko, this message translates to:
+  /// **'수익순'**
+  String get sortByProfit;
+
+  /// No description provided for @sortByLoss.
+  ///
+  /// In ko, this message translates to:
+  /// **'손실순'**
+  String get sortByLoss;
+
+  /// No description provided for @dataManagement.
+  ///
+  /// In ko, this message translates to:
+  /// **'데이터 관리'**
+  String get dataManagement;
 }
 
 class _AppLocalizationsDelegate

@@ -1,279 +1,397 @@
 {
-  "@@locale": "en",
-  "appTitle": "Trading Diary",
-  "dashboard": "Home",
-  "review": "Review",
-  "searchPlaceholder": "Search by stock name or code",
-  "resultFilter": "Result",
-  "stateFilter": "State",
-  "allResults": "All Results",
-  "winsOnly": "Profit Only",
-  "lossesOnly": "Loss Only",
-  "pendingOnly": "Pending",
-  "allStates": "All",
-  "newestFirst": "Newest First",
-  "oldestFirst": "Oldest First",
-  "portfolioSummary": "Portfolio Summary",
-  "total": "Total",
-  "win": "Gain",
-  "loss": "Loss",
-  "winRate": "Profit Rate",
-  "marketIndices": "Market Indices",
-  "recentTrades": "Recent Trades",
-  "virtual": "Virtual",
-  "real": "Real",
-  "noTradesYet": "No trades yet. Start journaling!",
-  "reminders": "Reminders",
-  "noPendingReminders": "No pending reminders",
-  "learning": "Learning",
-  "journal": "Journal",
-  "addTrade": "Record Trade",
-  "editTrade": "Edit Record",
-  "stockName": "Stock Name",
-  "direction": "Direction",
-  "buy": "Buy",
-  "sell": "Sell",
-  "entryPrice": "Buy Price",
-  "exitPrice": "Sell Price",
-  "shares": "Shares",
-  "sharesUnit": "shares",
-  "entryDate": "Buy Date",
-  "exitDate": "Sell Date",
-  "profitLoss": "Profit/Loss",
-  "profitLossPercent": "P/L %",
-  "tradeType": "Trade Type",
-  "notes": "Notes",
-  "save": "Complete",
-  "cancel": "Cancel",
-  "delete": "Delete",
-  "confirmDelete": "Delete this trade?",
-  "yes": "Yes",
-  "no": "No",
-  "today": "Today",
-  "thisWeek": "This Week",
-  "thisMonth": "This Month",
-  "thisYear": "This Year",
-  "all": "All",
-  "filter": "Filter",
-  "sort": "Sort",
-  "date": "Date",
-  "amount": "Amount",
-  "settings": "Settings",
-  "language": "Language",
-  "korean": "Korean",
-  "english": "English",
-  "theme": "Theme",
-  "dark": "Dark",
-  "light": "Light",
-  "display": "Display",
-  "displaySubtitle": "Display and colors",
-  "screenMode": "Screen mode",
-  "darkMode": "Dark mode",
-  "lightMode": "Light mode",
-  "priceColors": "Price colors",
-  "priceColorsKorean": "Korean (red up, blue down)",
-  "priceColorsWestern": "Western (green up, red down)",
-  "languageSection": "Language",
-  "languageSectionSubtitle": "App interface language",
-  "today": "Today",
-  "calendarMonthYear": "{year}/{month}",
-  "monthDayWeekday": "{month}/{day} ({weekday})",
-  "tradeCount": "· {count} trades",
-  "reviewEmptyHeader": "Pick a date from the calendar",
-  "reviewEmptyBody": "Trades made on the selected date will appear here.",
-  "reviewNoTradesTitle": "No trades on this day",
-  "reviewNoTradesBody": "Try a different date or change the filters.",
-  "reviewAddTradeForDay": "Record trade for this day",
-  "weekdayShortMon": "Mon",
-  "weekdayShortTue": "Tue",
-  "weekdayShortWed": "Wed",
-  "weekdayShortThu": "Thu",
-  "weekdayShortFri": "Fri",
-  "weekdayShortSat": "Sat",
-  "weekdayShortSun": "Sun",
-  "totalTrades": "Total Trades",
-  "winningTrades": "Winning Trades",
-  "losingTrades": "Losing Trades",
-  "averageProfit": "Average Profit",
-  "averageLoss": "Average Loss",
-  "bestTrade": "Best Trade",
-  "worstTrade": "Worst Trade",
-  "tradingIdea": "Trading Idea",
-  "mistake": "Mistake",
-  "lesson": "Lesson",
-  "whatILearned": "What I Learned",
-  "search": "Search",
-  "noResults": "No Results",
-  "kospi": "KOSPI",
-  "kosdaq": "KOSDAQ",
-  "nasdaq": "NASDAQ",
-  "sp500": "S&P 500",
-  "dowJones": "Dow Jones",
-  "lastUpdated": "Last Updated",
-  "error": "Error",
-  "retry": "Retry",
-  "loading": "Loading...",
-  "success": "Saved successfully",
-  "failure": "Failed to save",
-  "position": "Position",
-  "positionEntry": "Position Entry",
-  "positionClose": "Position Close",
-  "openPosition": "Open",
-  "closedPosition": "Closed",
-  "currentPrice": "Current Price",
-  "unrealizedPL": "Unrealized P/L",
-  "marketValue": "Market Value",
-  "holdings": "Holdings",
-  "addPosition": "Record Entry",
-  "closePosition": "Record Exit",
-  "simulate": "Simulate",
-  "trackPosition": "Track",
-  "updatePosition": "Update Position",
-  "entryOnly": "Buy Only",
-  "withExit": "Buy + Sell",
-  "more": "More",
-  "tradeJournal": "Trade Journal",
-  "analysisNote": "Analysis Note",
-  "addAnalysisNote": "Add Analysis Note",
-  "reminderTitle": "Reminder Title",
-  "reminderNote": "Reminder Note",
-  "reminderDate": "Reminder Date",
-  "setReminder": "Set Reminder",
-  "reminderFor": "Reminder",
-  "deleteReminder": "Delete Reminder",
-  "deleteReminderConfirm": "Delete this reminder? It will no longer fire.",
-  "notifications": "Notifications",
-  "notificationsSubtitle": "Trade reminders and review alerts",
-  "notificationsEnabled": "Enable notifications",
-  "notificationsEnabledSubtitle": "Get reminded about trades, reviews, and positions",
-  "notificationsPermissionDenied": "Notification permission is off. Tap to open settings.",
-  "notificationsOpenSettings": "Open Settings",
-  "notificationsReschedule": "Reschedule pending reminders",
-  "notificationsRescheduleDone": "{count} reminders scheduled",
-  "@notificationsRescheduleDone": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "tabOverview": "Overview",
-  "tabAnalysis": "Analysis",
-  "tradeReasonLabel": "Investment Rationale",
-  "tradeIdeaLabel": "Investment Idea",
-  "tradeStatusClosed": "Closed",
-  "tradeStatusOpen": "Open",
-  "sharesWithUnit": "{count} shares",
-  "@sharesWithUnit": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "priceChart": "Price Chart",
-  "pinchToZoom": "Pinch to zoom",
-  "noChartData": "No chart data",
-  "realizedPL": "Realized P/L",
-  "unrealizedPLLabel": "Unrealized P/L",
-  "journalCompleteness": "Journal completeness",
-  "journalCompleteMessage": "All sections complete. Excellent trade review!",
-  "journalRemainingMessage": "How about filling in {count} more sections?",
-  "@journalRemainingMessage": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "buyRationaleTitle": "Buy Rationale",
-  "buyRationaleSubtitle": "Why did you buy this stock? Summarize the core thesis.",
-  "buyRationaleHint1": "• Chart patterns or technical signals",
-  "buyRationaleHint2": "• Fundamentals, theme, or news catalysts",
-  "buyRationaleHint3": "• Expected return and holding period",
-  "marketAnalysisTitle": "Market Conditions",
-  "marketAnalysisSubtitle": "What was the market and sector momentum at entry?",
-  "marketAnalysisHint1": "• Overall market trend and sentiment",
-  "marketAnalysisHint2": "• Related sector and theme dynamics",
-  "marketAnalysisHint3": "• Evaluation of entry timing",
-  "riskManagementTitle": "Risk Management",
-  "riskManagementSubtitle": "How were your stop-loss and position size? Note any regrets.",
-  "riskManagementHint1": "• Whether you set a stop-loss in advance",
-  "riskManagementHint2": "• Position size and diversification",
-  "riskManagementHint3": "• Where you broke your own trading rules",
-  "keyLessonsTitle": "Key Lessons",
-  "keyLessonsSubtitle": "What's the most important lesson from this trade?",
-  "keyLessonsHint1": "• What went well — to repeat",
-  "keyLessonsHint2": "• What went wrong — to avoid",
-  "keyLessonsHint3": "• One-line summary of the lesson",
-  "nextTradePledgeTitle": "Next-Trade Pledge",
-  "nextTradePledgeSubtitle": "How will you apply this experience to the next trade?",
-  "nextTradePledgeHint1": "• Specific strategy to apply",
-  "nextTradePledgeHint2": "• Trading rules to change",
-  "nextTradePledgeHint3": "• Metrics or patterns to track",
-  "tryThisHint": "Try writing about...",
-  "enterAnalysisHint": "Type your analysis here...",
-  "charCount": "{count} chars",
-  "@charCount": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "resetButton": "Reset",
-  "noteCount": "{count} notes",
-  "@noteCount": {
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "noteSavedFormat": "「{title}」 saved",
-  "@noteSavedFormat": {
-    "placeholders": {
-      "title": { "type": "String" }
-    }
-  },
-  "recordButton": "Save",
-  "writtenNotes": "Saved Notes",
-  "setRemindersLabel": "Set Reminders",
-  "noRemindersSet": "No reminders set yet",
-  "newReminderHeader": "New Reminder",
-  "reminderTitleHint": "Reminder title (e.g., re-check this stock in 3 days)",
-  "reminderNoteHint": "Notes (optional)",
-  "enterReminderTitle": "Please enter a reminder title",
-  "reminderSetFormat": "Reminder set for {date}",
-  "@reminderSetFormat": {
-    "placeholders": {
-      "date": { "type": "String" }
-    }
-  },
-  "reminderOverdue": "Overdue",
-  "emptyOpenPositions": "No open positions",
-  "emptyClosedTrades": "No closed trades yet",
-  "snoozeOneDay": "Snooze 1 day",
-  "snoozeOneWeek": "Snooze 1 week",
-  "snoozeOneMonth": "Snooze 1 month",
-  "snoozeThreeMonths": "Snooze 3 months",
-  "snoozePickerTitle": "Snooze reminder",
-  "update": "Update",
-  "@update": {
-    "description": "Action label for the in-app update dialog button"
-  },
-  "later": "Later",
-  "@later": {
-    "description": "Dismiss label for the optional (non-forced) update dialog"
-  },
-  "updateRequiredTitle": "Update required",
-  "@updateRequiredTitle": {
-    "description": "Title of the forced-update dialog shown when the installed build is below the server's minimum_version"
-  },
-  "updateAvailableTitle": "Update available",
-  "@updateAvailableTitle": {
-    "description": "Title of the optional-update dialog shown when a newer version exists but is not required"
-  },
-  "updateDefaultBody": "A new version is available. Please update for the best experience.",
-  "@updateDefaultBody": {
-    "description": "Fallback body text for the update dialog when the server config doesn't supply a localized message"
-  },
-  "updateFetchError": "Couldn't load update info. Please try again.",
-  "@updateFetchError": {
-    "description": "Error message on the force-update screen when the config fetch fails"
-  },
-  "updateStoreOpenError": "Couldn't open the store. Please try again.",
-  "@updateStoreOpenError": {
-    "description": "Snackbar text on the force-update screen when launching the store URL fails"
-  }
+    "@@locale": "en",
+    "appTitle": "Trading Diary",
+    "dashboard": "Home",
+    "review": "Review",
+    "resultFilter": "Result",
+    "stateFilter": "State",
+    "allResults": "All Results",
+    "winsOnly": "Profit Only",
+    "lossesOnly": "Loss Only",
+    "pendingOnly": "Pending",
+    "allStates": "All",
+    "newestFirst": "Newest First",
+    "oldestFirst": "Oldest First",
+    "portfolioSummary": "Portfolio Summary",
+    "total": "Total",
+    "win": "Gain",
+    "loss": "Loss",
+    "winRate": "Profit Rate",
+    "recentTrades": "Recent Trades",
+    "virtual": "Virtual",
+    "real": "Real",
+    "noTradesYet": "No trades yet. Start journaling!",
+    "learning": "Learning",
+    "journal": "Journal",
+    "addTrade": "Record Trade",
+    "editTrade": "Edit Record",
+    "stockName": "Stock Name",
+    "direction": "Direction",
+    "buy": "Buy",
+    "sell": "Sell",
+    "entryPrice": "Buy Price",
+    "exitPrice": "Sell Price",
+    "shares": "Shares",
+    "sharesUnit": "shares",
+    "entryDate": "Buy Date",
+    "exitDate": "Sell Date",
+    "profitLoss": "Profit/Loss",
+    "profitLossPercent": "P/L %",
+    "tradeType": "Trade Type",
+    "notes": "Notes",
+    "save": "Complete",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirmDelete": "Delete this trade?",
+    "yes": "Yes",
+    "no": "No",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "thisYear": "This Year",
+    "all": "All",
+    "filter": "Filter",
+    "sort": "Sort",
+    "date": "Date",
+    "amount": "Amount",
+    "settings": "Settings",
+    "language": "Language",
+    "korean": "Korean",
+    "english": "English",
+    "dark": "Dark",
+    "light": "Light",
+    "display": "Display",
+    "displaySubtitle": "Display and colors",
+    "priceColors": "Price colors",
+    "priceColorsKorean": "Korean (red up, blue down)",
+    "priceColorsWestern": "Western (green up, red down)",
+    "languageSection": "Language",
+    "languageSectionSubtitle": "App interface language",
+    "calendarMonthYear": "{year}/{month}",
+    "monthDayWeekday": "{month}/{day} ({weekday})",
+    "tradeCount": "· {count} trades",
+    "reviewEmptyHeader": "Pick a date from the calendar",
+    "reviewEmptyBody": "Trades made on the selected date will appear here.",
+    "reviewNoTradesTitle": "No trades on this day",
+    "reviewNoTradesBody": "Try a different date or change the filters.",
+    "reviewAddTradeForDay": "Record trade for this day",
+    "weekdayShortMon": "Mon",
+    "weekdayShortTue": "Tue",
+    "weekdayShortWed": "Wed",
+    "weekdayShortThu": "Thu",
+    "weekdayShortFri": "Fri",
+    "weekdayShortSat": "Sat",
+    "weekdayShortSun": "Sun",
+    "totalTrades": "Total Trades",
+    "winningTrades": "Winning Trades",
+    "losingTrades": "Losing Trades",
+    "averageProfit": "Average Profit",
+    "averageLoss": "Average Loss",
+    "bestTrade": "Best Trade",
+    "worstTrade": "Worst Trade",
+    "tradingIdea": "Trading Idea",
+    "mistake": "Mistake",
+    "lesson": "Lesson",
+    "whatILearned": "What I Learned",
+    "error": "Error",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "success": "Saved successfully",
+    "failure": "Failed to save",
+    "position": "Position",
+    "openPosition": "Open",
+    "closedPosition": "Closed",
+    "marketValue": "Market Value",
+    "addPosition": "Record Entry",
+    "closePosition": "Record Exit",
+    "entryOnly": "Buy Only",
+    "withExit": "Buy + Sell",
+    "more": "More",
+    "tradeJournal": "Trade Journal",
+    "analysisNote": "Analysis Note",
+    "addAnalysisNote": "Add Analysis Note",
+    "tabOverview": "Overview",
+    "tabAnalysis": "Analysis",
+    "tradeReasonLabel": "Investment Rationale",
+    "tradeIdeaLabel": "Investment Idea",
+    "tradeStatusClosed": "Closed",
+    "tradeStatusOpen": "Open",
+    "sharesWithUnit": "{count} shares",
+    "@sharesWithUnit": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "priceChart": "Price Chart",
+    "pinchToZoom": "Pinch to zoom",
+    "noChartData": "No chart data",
+    "realizedPL": "Realized P/L",
+    "unrealizedPLLabel": "Unrealized P/L",
+    "journalCompleteness": "Journal completeness",
+    "journalCompleteMessage": "All sections complete. Excellent trade review!",
+    "journalRemainingMessage": "How about filling in {count} more sections?",
+    "@journalRemainingMessage": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "buyRationaleTitle": "Buy Rationale",
+    "buyRationaleSubtitle": "Why did you buy this stock? Summarize the core thesis.",
+    "buyRationaleHint1": "• Chart patterns or technical signals",
+    "buyRationaleHint2": "• Fundamentals, theme, or news catalysts",
+    "buyRationaleHint3": "• Expected return and holding period",
+    "marketAnalysisTitle": "Market Conditions",
+    "marketAnalysisSubtitle": "What was the market and sector momentum at entry?",
+    "marketAnalysisHint1": "• Overall market trend and sentiment",
+    "marketAnalysisHint2": "• Related sector and theme dynamics",
+    "marketAnalysisHint3": "• Evaluation of entry timing",
+    "riskManagementTitle": "Risk Management",
+    "riskManagementSubtitle": "How were your stop-loss and position size? Note any regrets.",
+    "riskManagementHint1": "• Whether you set a stop-loss in advance",
+    "riskManagementHint2": "• Position size and diversification",
+    "riskManagementHint3": "• Where you broke your own trading rules",
+    "keyLessonsTitle": "Key Lessons",
+    "keyLessonsSubtitle": "What's the most important lesson from this trade?",
+    "keyLessonsHint1": "• What went well — to repeat",
+    "keyLessonsHint2": "• What went wrong — to avoid",
+    "keyLessonsHint3": "• One-line summary of the lesson",
+    "nextTradePledgeTitle": "Next-Trade Pledge",
+    "nextTradePledgeSubtitle": "How will you apply this experience to the next trade?",
+    "nextTradePledgeHint1": "• Specific strategy to apply",
+    "nextTradePledgeHint2": "• Trading rules to change",
+    "nextTradePledgeHint3": "• Metrics or patterns to track",
+    "tryThisHint": "Try writing about...",
+    "enterAnalysisHint": "Type your analysis here...",
+    "charCount": "{count} chars",
+    "@charCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "resetButton": "Reset",
+    "noteCount": "{count} notes",
+    "@noteCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noteSavedFormat": "「{title}」 saved",
+    "@noteSavedFormat": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "recordButton": "Save",
+    "writtenNotes": "Saved Notes",
+    "emptyOpenPositions": "No open positions",
+    "emptyClosedTrades": "No closed trades yet",
+    "update": "Update",
+    "@update": {
+        "description": "Action label for the in-app update dialog button"
+    },
+    "later": "Later",
+    "@later": {
+        "description": "Dismiss label for the optional (non-forced) update dialog"
+    },
+    "updateRequiredTitle": "Update required",
+    "@updateRequiredTitle": {
+        "description": "Title of the forced-update dialog shown when the installed build is below the server's minimum_version"
+    },
+    "updateAvailableTitle": "Update available",
+    "@updateAvailableTitle": {
+        "description": "Title of the optional-update dialog shown when a newer version exists but is not required"
+    },
+    "updateDefaultBody": "A new version is available. Please update for the best experience.",
+    "@updateDefaultBody": {
+        "description": "Fallback body text for the update dialog when the server config doesn't supply a localized message"
+    },
+    "updateFetchError": "Couldn't load update info. Please try again.",
+    "@updateFetchError": {
+        "description": "Error message on the force-update screen when the config fetch fails"
+    },
+    "updateStoreOpenError": "Couldn't open the store. Please try again.",
+    "@updateStoreOpenError": {
+        "description": "Snackbar text on the force-update screen when launching the store URL fails"
+    },
+    "analytics": "Analytics",
+    "tabAnalyticsSummary": "Overview",
+    "tabTradeCalendar": "Calendar",
+    "periodAll": "All",
+    "period1Y": "1Y",
+    "period6M": "6M",
+    "period1M": "1M",
+    "period1W": "1W",
+    "marketAll": "All markets",
+    "marketDomestic": "Korea (KRX)",
+    "marketUS": "US",
+    "profitFactor": "Profit factor",
+    "payoffRatio": "Win/Loss ratio",
+    "avgWin": "Avg. win",
+    "avgLoss": "Avg. loss",
+    "avgHoldingPeriod": "Avg. holding",
+    "daysUnit": "{days}d",
+    "@daysUnit": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "winStreakFormat": "{count} wins",
+    "@winStreakFormat": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "lossStreakFormat": "{count} losses",
+    "@lossStreakFormat": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "bestTradeLabel": "Best trade",
+    "worstTradeLabel": "Worst trade",
+    "cumulativePnLChart": "Cumulative realised P&L",
+    "monthlyPnLChart": "Monthly realised P&L",
+    "winLossDistribution": "Win/Loss distribution",
+    "stockRankings": "Performance by stock",
+    "strategyPerformance": "Performance by strategy",
+    "weekdayPatterns": "Patterns by weekday",
+    "topGainers": "Top gainers",
+    "topLosers": "Top losers",
+    "emptyAnalyticsTitle": "No trades to aggregate yet",
+    "emptyAnalyticsSubtitle": "Log a trade in the journal to unlock multi-dimensional analytics and performance insights.",
+    "uncategorisedStrategy": "(Uncategorised)",
+    "tradeTypeAll": "All accounts",
+    "noClosedTrades": "No closed trades in this window",
+    "infinitySymbol": "∞",
+    "accountTag": "Account tag",
+    "accountManagement": "Accounts & tags",
+    "allAccounts": "All accounts",
+    "unassignedAccount": "(Unassigned)",
+    "accountPerformance": "Performance by account",
+    "addAccount": "Add account",
+    "editAccount": "Edit account",
+    "deleteAccount": "Delete account",
+    "accountName": "Account name",
+    "accountProfitLoss": "P&L",
+    "selectAccountTag": "Select account / tag",
+    "accountNameHint": "e.g. Kiwoom main",
+    "accountMemoHint": "Memo (optional)",
+    "deleteAccountConfirmTitle": "Delete this account?",
+    "deleteAccountConfirmBody": "Existing trades are kept but may show as unassigned.",
+    "noAccountsRegistered": "No accounts yet. Add one to get started.",
+    "tradesCount": "{count}",
+    "@tradesCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "openPositionsCount": "{count} open",
+    "@openPositionsCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "avgReturn": "Avg return",
+    "viewTradesForAccount": "View trades",
+    "myAccounts": "My Accounts",
+    "totalInvested": "Total Invested",
+    "recentStocks": "Recent Stocks",
+    "investedCapital": "Invested Capital",
+    "recoveredAmount": "Recovered Amount",
+    "heldForDaysFormat": "Held for {days} days",
+    "@heldForDaysFormat": {
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "priceMovement": "Price Movement",
+    "marketEtc": "Other/Crypto",
+    "exportToExcel": "Export to Excel (CSV)",
+    "exportCsvDescription": "UTF-8 CSV that opens directly in Excel, Hancell, or Google Sheets",
+    "exportCopyClipboard": "Copy to Clipboard",
+    "exportCopiedSnack": "Excel (CSV) data copied to clipboard.",
+    "exportTradeCount": "{count} trades included.",
+    "@exportTradeCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "themeMode": "Theme Mode",
+    "themeModeSystem": "System",
+    "themeModeLight": "Light",
+    "themeModeDark": "Dark",
+    "brokerAccount": "Select Broker",
+    "accountType": "Account Type",
+    "accountTypeCash": "Cash Account",
+    "accountTypeIsa": "ISA Account",
+    "accountTypePension": "Pension Savings",
+    "accountTypeIrp": "IRP",
+    "accountTypeCma": "CMA",
+    "quickAddAccount": "Add New Account",
+    "addTradeOnDate": "Record trade on {month}/{day}",
+    "tradesOnDate": "Trades on {month}/{day}",
+    "quickRecordTrade": "Record Trade",
+    "manageAccounts": "Manage Accounts",
+    "accountsOverview": "Accounts Overview",
+    "openPositions": "Open Positions",
+    "totalReturnPercent": "Total Return",
+    "completedTrades": "Completed Trades",
+    "holdingsCount": "Holdings",
+    "@addTradeOnDate": {
+        "placeholders": {
+            "month": {
+                "type": "int"
+            },
+            "day": {
+                "type": "int"
+            }
+        }
+    },
+    "@tradesOnDate": {
+        "placeholders": {
+            "month": {
+                "type": "int"
+            },
+            "day": {
+                "type": "int"
+            }
+        }
+    },
+    "completedTradesCount": "{count} completed trades",
+    "@completedTradesCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "searchTrades": "Search name, strategy, memo",
+    "sortBy": "Sort",
+    "sortByProfit": "Best return",
+    "sortByLoss": "Worst return",
+    "dataManagement": "Data Management"
 }

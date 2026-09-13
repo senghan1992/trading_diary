@@ -8,10 +8,11 @@ import '../models/trade_entry.dart';
 import '../models/stock.dart';
 import '../theme/app_theme.dart';
 import '../services/ad_service.dart';
-import '../services/stock_api_service.dart';
 import '../utils/currency.dart';
 import '../utils/responsive.dart';
 import '../widgets/responsive_layout.dart';
+import '../widgets/stock_autocomplete_field.dart';
+import 'account_management_screen.dart';
 
 class AddTradeScreen extends StatefulWidget {
   const AddTradeScreen({super.key, this.initialEntryDate});
@@ -23,17 +24,37 @@ class AddTradeScreen extends StatefulWidget {
 }
 
 class _AddTradeScreenState extends State<AddTradeScreen> {
+  static const _sectionTradeMode = '거래 방식';
+  static const _sectionPriceQty = '가격 및 수량';
+  static const _sectionDates = '매매 일자';
+  static const _sectionSplitTrades = '분할 매매 체결 내역 (선택)';
+  static const _sectionNotes = '전략 및 복기';
+
   final _formKey = GlobalKey<FormState>();
+  final _stockNameCtrl = TextEditingController();
   final _entryPriceCtrl = TextEditingController();
   final _exitPriceCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController();
   final _reasonCtrl = TextEditingController();
   final _strategyCtrl = TextEditingController();
 
-  Stock? _selectedStock;
   late DateTime _entryDate;
   late DateTime _exitDate;
   bool _isPositionOnly = true;
+
+  /// 추가 매수 및 분할 매도 체결 목록
+  final List<TradeExecution> _additionalExecutions = [];
+
+  /// 선택된 마켓. 국내(KOSPI/KOSDAQ) / 미국(NASDAQ) / 기타·가상자산(null).
+  /// 저장 시 [inferMarketFromSymbol] 패턴(.KQ 등 코스닥 표기)을 참고해
+  /// kosdaq으로 재추론할 수 있다.
+  MarketType? _selectedMarket = MarketType.kospi;
+
+  /// 자동완성으로 선택된 종목 코드 (예: 005930, AAPL). null일 경우 종목명을 심볼로 사용.
+  String? _selectedStockCode;
+
+  /// 선택된 계좌 태그 이름. null = 미지정.
+  String? _selectedAccountTag;
 
   @override
   void initState() {
@@ -41,10 +62,20 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
     final initial = widget.initialEntryDate ?? DateTime.now();
     _entryDate = initial;
     _exitDate = initial;
+    // 최근 사용한 계좌 태그를 기본 선택값으로 자동 지정.
+    final provider = context.read<TradeProvider>();
+    final trades = provider.trades;
+    if (trades.isNotEmpty) {
+      final lastTag = trades.last.accountTag;
+      if (lastTag != null && provider.accounts.any((a) => a.name == lastTag)) {
+        _selectedAccountTag = lastTag;
+      }
+    }
   }
 
   @override
   void dispose() {
+    _stockNameCtrl.dispose();
     _entryPriceCtrl.dispose();
     _exitPriceCtrl.dispose();
     _quantityCtrl.dispose();
@@ -53,17 +84,52 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
     super.dispose();
   }
 
+  /// 최근 입력한 종목명 (중복 제거, 최근순, 최대 8개).
+  List<String> _recentStockNames(List<TradeEntry> trades) {
+    final sorted = [...trades]
+      ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+    final seen = <String>{};
+    final names = <String>[];
+    for (final t in sorted) {
+      final name = t.stockName.trim();
+      if (name.isEmpty) continue;
+      if (seen.add(name)) names.add(name);
+      if (names.length >= 8) break;
+    }
+    return names;
+  }
+
+  /// 칩에서 고른 마켓 + 사용자가 입력한 심볼(=종목명)을 조합해 최종 마켓 결정.
+  /// 국내 선택 시 .KQ 등 코스닥 패턴이면 kosdaq으로 추론한다.
+  MarketType? _resolveMarket(String symbol) {
+    switch (_selectedMarket) {
+      case MarketType.kosdaq:
+        return MarketType.kosdaq;
+      case MarketType.nasdaq:
+        return MarketType.nasdaq;
+      case MarketType.kospi:
+        final upper = symbol.toUpperCase();
+        if (upper.endsWith('.KQ') || upper.endsWith('.KOSDAQ')) {
+          return MarketType.kosdaq;
+        }
+        return MarketType.kospi;
+      case null:
+        // 기타/가상자산 — 마켓 미지정으로 저장(표시 시 폴백 추론).
+        return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bgColor = isDark ? AppColors.darkBg : AppColors.lightBg;
-    final textColor = isDark ? AppColors.white : AppColors.lightText;
-    final subColor =
-        isDark ? AppColors.silverBlue : AppColors.lightTextSecondary;
-    final cardColor = isDark ? AppColors.darkCard : AppColors.lightCard;
-    final inputFill = isDark ? AppColors.darkSurface : AppColors.white;
+    final bgColor = AppColors.bg;
+    final textColor = AppColors.text;
+    final subColor = AppColors.textMuted;
+    final cardColor = AppColors.card;
+    final inputFill = AppColors.surface;
+    final recentStocks = _recentStockNames(
+      context.watch<TradeProvider>().trades,
+    );
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -92,33 +158,148 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isDark) _HeroHeader(subColor: subColor),
-                if (isDark) const SizedBox(height: AppSpacing.xl),
+                // ── 01. 거래 계좌 선택 ──
                 _NumberedSectionHeader(
                   index: '01',
+                  label: l10n.selectAccountTag,
+                  subColor: subColor,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildAccountSelector(),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── 02. 종목 정보 ──
+                _NumberedSectionHeader(
+                  index: '02',
                   label: l10n.stockName,
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _PremiumStockSelector(
-                  stock: _selectedStock,
-                  onTap: () => _showStockPicker(
-                    context,
-                    isDark,
-                    bgColor,
-                    textColor,
-                    subColor,
-                    cardColor,
+                StockAutocompleteField(
+                  controller: _stockNameCtrl,
+                  labelText: l10n.stockName,
+                  currentMarket: _selectedMarket,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.error : null,
+                  onSelected: (stock) {
+                    setState(() {
+                      _selectedStockCode = stock.code;
+                      _selectedMarket = stock.market;
+                    });
+                  },
+                ),
+                if (recentStocks.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    l10n.recentStocks,
+                    style: TextStyle(
+                      color: subColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  isDark: isDark,
-                  textColor: textColor,
-                  subColor: subColor,
-                  cardColor: cardColor,
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          for (final name in recentStocks)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                right: AppSpacing.sm,
+                              ),
+                              child: ActionChip(
+                                label: Text(name),
+                                labelStyle: TextStyle(
+                                  color: textColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                backgroundColor: cardColor,
+                                side: BorderSide(color: AppColors.border),
+                                onPressed: () =>
+                                    setState(() => _stockNameCtrl.text = name),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    ChoiceChip(
+                      label: Text(l10n.marketDomestic),
+                      selected:
+                          _selectedMarket == MarketType.kospi ||
+                          _selectedMarket == MarketType.kosdaq,
+                      selectedColor: AppColors.accentSubtle,
+                      checkmarkColor: AppColors.accent,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      side: BorderSide(
+                        color:
+                            (_selectedMarket == MarketType.kospi ||
+                                _selectedMarket == MarketType.kosdaq)
+                            ? AppColors.accent
+                            : AppColors.border,
+                      ),
+                      onSelected: (_) =>
+                          setState(() => _selectedMarket = MarketType.kospi),
+                    ),
+                    ChoiceChip(
+                      label: Text(l10n.marketUS),
+                      selected: _selectedMarket == MarketType.nasdaq,
+                      selectedColor: AppColors.accentSubtle,
+                      checkmarkColor: AppColors.accent,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      side: BorderSide(
+                        color: _selectedMarket == MarketType.nasdaq
+                            ? AppColors.accent
+                            : AppColors.border,
+                      ),
+                      onSelected: (_) =>
+                          setState(() => _selectedMarket = MarketType.nasdaq),
+                    ),
+                    ChoiceChip(
+                      label: Text(l10n.marketEtc),
+                      selected: _selectedMarket == null,
+                      selectedColor: AppColors.accentSubtle,
+                      checkmarkColor: AppColors.accent,
+                      showCheckmark: false,
+                      labelStyle: TextStyle(
+                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      side: BorderSide(
+                        color: _selectedMarket == null
+                            ? AppColors.accent
+                            : AppColors.border,
+                      ),
+                      onSelected: (_) => setState(() => _selectedMarket = null),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.xl),
+
+                // ── 03. 거래 방식 ──
                 _NumberedSectionHeader(
-                  index: '02',
-                  label: '거래 방식',
+                  index: '03',
+                  label: _sectionTradeMode,
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -132,9 +313,11 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.xl),
+
+                // ── 04. 가격 및 수량 ──
                 _NumberedSectionHeader(
-                  index: '03',
-                  label: '가격 & 수량',
+                  index: '04',
+                  label: _sectionPriceQty,
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -146,9 +329,8 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                         child: _PremiumInputField(
                           controller: _entryPriceCtrl,
                           label: l10n.entryPrice,
-                          prefix: '${currencySymbolFor(_selectedStock?.market)} ',
+                          prefix: '${currencySymbolFor(_selectedMarket)} ',
                           icon: Icons.payments_outlined,
-                          isDark: isDark,
                           textColor: textColor,
                           subColor: subColor,
                           fillColor: inputFill,
@@ -166,9 +348,8 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                           child: _PremiumInputField(
                             controller: _exitPriceCtrl,
                             label: l10n.exitPrice,
-                            prefix: '${currencySymbolFor(_selectedStock?.market)} ',
+                            prefix: '${currencySymbolFor(_selectedMarket)} ',
                             icon: Icons.sell_outlined,
-                            isDark: isDark,
                             textColor: textColor,
                             subColor: subColor,
                             fillColor: inputFill,
@@ -187,7 +368,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   _QuantityStepper(
                     controller: _quantityCtrl,
                     label: l10n.shares,
-                    isDark: isDark,
                     textColor: textColor,
                     subColor: subColor,
                     fillColor: inputFill,
@@ -202,9 +382,8 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   _PremiumInputField(
                     controller: _entryPriceCtrl,
                     label: l10n.entryPrice,
-                    prefix: '${currencySymbolFor(_selectedStock?.market)} ',
+                    prefix: '${currencySymbolFor(_selectedMarket)} ',
                     icon: Icons.payments_outlined,
-                    isDark: isDark,
                     textColor: textColor,
                     subColor: subColor,
                     fillColor: inputFill,
@@ -220,9 +399,8 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                     _PremiumInputField(
                       controller: _exitPriceCtrl,
                       label: l10n.exitPrice,
-                      prefix: '${currencySymbolFor(_selectedStock?.market)} ',
+                      prefix: '${currencySymbolFor(_selectedMarket)} ',
                       icon: Icons.sell_outlined,
-                      isDark: isDark,
                       textColor: textColor,
                       subColor: subColor,
                       fillColor: inputFill,
@@ -238,7 +416,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   _QuantityStepper(
                     controller: _quantityCtrl,
                     label: l10n.shares,
-                    isDark: isDark,
                     textColor: textColor,
                     subColor: subColor,
                     fillColor: inputFill,
@@ -256,15 +433,16 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   exitPriceCtrl: _exitPriceCtrl,
                   quantityCtrl: _quantityCtrl,
                   showPnl: !_isPositionOnly,
-                  isDark: isDark,
                   textColor: textColor,
                   subColor: subColor,
-                  market: _selectedStock?.market,
+                  market: _selectedMarket,
                 ),
                 const SizedBox(height: AppSpacing.xl),
+
+                // ── 05. 일자 ──
                 _NumberedSectionHeader(
-                  index: '04',
-                  label: '매매 일자',
+                  index: '05',
+                  label: _sectionDates,
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -276,16 +454,26 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                   exitLabel: l10n.exitDate,
                   onPickEntry: (d) => setState(() => _entryDate = d),
                   onPickExit: (d) => setState(() => _exitDate = d),
-                  isDark: isDark,
                   textColor: textColor,
                   subColor: subColor,
                   cardColor: cardColor,
-                  l10n: l10n,
                 ),
                 const SizedBox(height: AppSpacing.xl),
+
+                // ── 06. 분할 매매 체결 내역 ──
                 _NumberedSectionHeader(
-                  index: '05',
-                  label: '메모 & 교훈',
+                  index: '06',
+                  label: _sectionSplitTrades,
+                  subColor: subColor,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _buildSplitTradesSection(textColor, subColor, cardColor, inputFill),
+                const SizedBox(height: AppSpacing.xl),
+
+                // ── 07. 전략 및 복기 ──
+                _NumberedSectionHeader(
+                  index: '07',
+                  label: _sectionNotes,
                   subColor: subColor,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -298,7 +486,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                           controller: _reasonCtrl,
                           icon: Icons.lightbulb_outline,
                           hint: l10n.tradingIdea,
-                          isDark: isDark,
                           textColor: textColor,
                           subColor: subColor,
                           cardColor: cardColor,
@@ -310,7 +497,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                           controller: _strategyCtrl,
                           icon: Icons.school_outlined,
                           hint: l10n.lesson,
-                          isDark: isDark,
                           textColor: textColor,
                           subColor: subColor,
                           cardColor: cardColor,
@@ -323,7 +509,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                     controller: _reasonCtrl,
                     icon: Icons.lightbulb_outline,
                     hint: l10n.tradingIdea,
-                    isDark: isDark,
                     textColor: textColor,
                     subColor: subColor,
                     cardColor: cardColor,
@@ -333,7 +518,6 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
                     controller: _strategyCtrl,
                     icon: Icons.school_outlined,
                     hint: l10n.lesson,
-                    isDark: isDark,
                     textColor: textColor,
                     subColor: subColor,
                     cardColor: cardColor,
@@ -353,29 +537,496 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
     );
   }
 
-  void _showStockPicker(
-    BuildContext context,
-    bool isDark,
-    Color bgColor,
+  /// Horizontal scrollable row of account-tag chips plus an "add account"
+  /// action chip. Selecting a chip tags the trade being created; the
+  /// "미지정" chip stores `accountTag: null`.
+  Widget _buildAccountSelector() {
+    final l10n = AppLocalizations.of(context)!;
+    final accounts = context.watch<TradeProvider>().accounts;
+
+    final chips = <Widget>[
+      for (final account in accounts)
+        Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.sm),
+          child: ChoiceChip(
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (account.colorValue != null) ...[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Color(account.colorValue!),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(account.name),
+              ],
+            ),
+            selected: _selectedAccountTag == account.name,
+            selectedColor: account.colorValue != null
+                ? Color(account.colorValue!).withValues(alpha: 0.25)
+                : AppColors.accentSubtle,
+            checkmarkColor: AppColors.text,
+            side: BorderSide(
+              color: _selectedAccountTag == account.name
+                  ? (account.colorValue != null
+                        ? Color(account.colorValue!)
+                        : AppColors.accent)
+                  : AppColors.border,
+            ),
+            labelStyle: TextStyle(
+              color: AppColors.text,
+              fontWeight: _selectedAccountTag == account.name
+                  ? FontWeight.w800
+                  : FontWeight.w600,
+            ),
+            showCheckmark: false,
+            onSelected: (_) =>
+                setState(() => _selectedAccountTag = account.name),
+          ),
+        ),
+      Padding(
+        padding: const EdgeInsets.only(right: AppSpacing.sm),
+        child: ChoiceChip(
+          label: Text(l10n.unassignedAccount),
+          selected: _selectedAccountTag == null,
+          selectedColor: AppColors.accentSubtle,
+          checkmarkColor: AppColors.text,
+          side: BorderSide(
+            color: _selectedAccountTag == null
+                ? AppColors.accent
+                : AppColors.border,
+          ),
+          labelStyle: TextStyle(
+            color: AppColors.textMuted,
+            fontWeight: _selectedAccountTag == null
+                ? FontWeight.w800
+                : FontWeight.w600,
+          ),
+          showCheckmark: false,
+          onSelected: (_) => setState(() => _selectedAccountTag = null),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(right: AppSpacing.sm),
+        child: ActionChip(
+          avatar: Icon(Icons.add, size: 18, color: AppColors.accent),
+          label: Text(
+            l10n.addAccount,
+            style: TextStyle(color: AppColors.accent),
+          ),
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.4)),
+          onPressed: () => _openAccountManagement(),
+        ),
+      ),
+    ];
+
+    return SizedBox(
+      width: double.infinity,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(children: chips),
+      ),
+    );
+  }
+
+  /// 계좌 관리 화면으로 이동. 돌아오면 계좌 목록 변경(삭제 등)을 반영해
+  /// 선택값을 검증한다. Provider를 watch하므로 목록 갱신은 자동 반영된다.
+  Future<void> _openAccountManagement() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AccountManagementScreen()));
+    if (!mounted) return;
+    final accounts = context.read<TradeProvider>().accounts;
+    final tag = _selectedAccountTag;
+    if (tag != null && !accounts.any((a) => a.name == tag)) {
+      setState(() => _selectedAccountTag = null);
+    }
+  }
+
+  Widget _buildSplitTradesSection(
     Color textColor,
     Color subColor,
     Color cardColor,
+    Color inputFill,
   ) {
-    // H12: previously the search TextEditingController was created in this
-    // method's scope and inherited by a `StatefulBuilder`. If the user
-    // dismissed via scrim (without picking a stock) the controller leaked.
-    // A dedicated StatefulWidget now owns + disposes the controller.
-    ResponsiveSheet.show<void>(
+    final entryPrice = double.tryParse(_entryPriceCtrl.text.trim()) ?? 0;
+    final quantity = int.tryParse(_quantityCtrl.text.trim()) ?? 0;
+    final symbol = currencySymbolFor(_selectedMarket);
+    final formatter = NumberFormat('#,###');
+
+    final allExecutions = <TradeExecution>[];
+    if (entryPrice > 0 && quantity > 0) {
+      allExecutions.add(TradeExecution(
+        id: 'initial',
+        action: TradeExecutionAction.buy,
+        price: entryPrice,
+        quantity: quantity,
+        date: _entryDate,
+        memo: '1차 매수',
+      ));
+    }
+    allExecutions.addAll(_additionalExecutions);
+
+    final hasExecutions = _additionalExecutions.isNotEmpty;
+
+    TradeCalculatedState? calc;
+    if (allExecutions.isNotEmpty) {
+      calc = TradeEntry.calculateExecutions(
+        executions: allExecutions,
+        direction: TradeDirection.buy,
+        fallbackEntryDate: _entryDate,
+        fallbackEntryPrice: entryPrice,
+        fallbackQuantity: quantity,
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.layers_outlined, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Text(
+                '분할 매수 / 분할 매도 내역',
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (hasExecutions)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentSubtle,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '총 ${allExecutions.length}회 체결',
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (!hasExecutions) ...[
+            Text(
+              '여러 번 나누어 추가 매수하거나 분할 매도한 경우 체결 내역을 추가해 보세요. 평균 단가와 실현 손익이 자동으로 계산됩니다.',
+              style: TextStyle(color: subColor, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showAddExecutionDialog,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('분할 매매 체결 기록 추가'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  side: BorderSide(color: AppColors.accent.withValues(alpha: 0.4)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ),
+          ] else ...[
+            if (calc != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: inputFill,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('최종 평단가', style: TextStyle(color: subColor, fontSize: 11)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$symbol${formatter.format(calc.averageEntryPrice.round())}',
+                            style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('잔여 / 총수량', style: TextStyle(color: subColor, fontSize: 11)),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${formatter.format(calc.remainingQuantity)} / ${formatter.format(calc.totalBuyQuantity)}주',
+                            style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (calc.totalSellQuantity > 0)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('실현 손익', style: TextStyle(color: subColor, fontSize: 11)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${calc.realizedProfitLoss >= 0 ? '+' : ''}$symbol${formatter.format(calc.realizedProfitLoss.round())}',
+                              style: TextStyle(
+                                color: calc.realizedProfitLoss >= 0 ? AppColors.green : AppColors.red,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _additionalExecutions.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final exec = _additionalExecutions[index];
+                final isBuy = exec.action == TradeExecutionAction.buy;
+                final badgeColor = isBuy ? AppColors.green : AppColors.red;
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: inputFill,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          isBuy ? '추가매수' : '분할매도',
+                          style: TextStyle(color: badgeColor, fontSize: 11, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        DateFormat('yyyy.MM.dd').format(exec.date),
+                        style: TextStyle(color: subColor, fontSize: 12),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$symbol${formatter.format(exec.price.round())} · ${formatter.format(exec.quantity)}주',
+                        style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 16),
+                        color: subColor,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: () {
+                          setState(() {
+                            _additionalExecutions.removeAt(index);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showAddExecutionDialog,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('체결 내역 추가'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  side: BorderSide(color: AppColors.accent.withValues(alpha: 0.3)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showAddExecutionDialog() {
+    TradeExecutionAction selectedAction = TradeExecutionAction.buy;
+    final priceCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController();
+    final memoCtrl = TextEditingController();
+    DateTime date = DateTime.now();
+    final symbol = currencySymbolFor(_selectedMarket);
+
+    showDialog(
       context: context,
-      builder: (_) => _StockPickerSheet(
-        textColor: textColor,
-        subColor: subColor,
-        bgColor: bgColor,
-        onSelected: (stock) {
-          // Parent state update for the selected stock. Captured via the
-          // outer `setState` (StatefulWidget State<...>_AddTradeScreenState).
-          setState(() => _selectedStock = stock);
-          Navigator.of(context).pop();
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.card,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('체결 내역 추가', style: TextStyle(fontWeight: FontWeight.w700)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('추가 매수')),
+                          selected: selectedAction == TradeExecutionAction.buy,
+                          selectedColor: AppColors.green.withValues(alpha: 0.2),
+                          onSelected: (_) => setDialogState(() => selectedAction = TradeExecutionAction.buy),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Center(child: Text('분할 매도')),
+                          selected: selectedAction == TradeExecutionAction.sell,
+                          selectedColor: AppColors.red.withValues(alpha: 0.2),
+                          onSelected: (_) => setDialogState(() => selectedAction = TradeExecutionAction.sell),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: priceCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: selectedAction == TradeExecutionAction.buy ? '매수가' : '매도가',
+                      prefixText: '$symbol ',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: qtyCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: '수량',
+                      suffixText: '주',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: date,
+                        firstDate: _entryDate,
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) setDialogState(() => date = picked);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(DateFormat('yyyy.MM.dd').format(date)),
+                          const Icon(Icons.calendar_today, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: memoCtrl,
+                    decoration: InputDecoration(
+                      labelText: '메모 (선택)',
+                      hintText: selectedAction == TradeExecutionAction.buy ? null : '예: 1차 분할 익절',
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('취소'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final price = double.tryParse(priceCtrl.text.trim());
+                  final qty = int.tryParse(qtyCtrl.text.trim());
+                  if (price == null || price <= 0 || qty == null || qty <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('올바른 가격과 수량을 입력해주세요.')),
+                    );
+                    return;
+                  }
+                  setState(() {
+                    _additionalExecutions.add(
+                      TradeExecution(
+                        id: DateTime.now().microsecondsSinceEpoch.toString(),
+                        action: selectedAction,
+                        price: price,
+                        quantity: qty,
+                        date: date,
+                        memo: memoCtrl.text.trim().isNotEmpty ? memoCtrl.text.trim() : null,
+                      ),
+                    );
+                  });
+                  Navigator.of(ctx).pop();
+                },
+                child: const Text('추가'),
+              ),
+            ],
+          );
         },
       ),
     );
@@ -389,30 +1040,90 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
   /// red SnackBar so the user can retry.
   Future<void> _submitTrade() async {
     final l10n = AppLocalizations.of(context)!;
-    if (_selectedStock == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.error)),
-      );
+    if (!_formKey.currentState!.validate()) return;
+
+    final stockName = _stockNameCtrl.text.trim();
+    if (stockName.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.error)));
       return;
     }
-    if (!_formKey.currentState!.validate()) return;
+    final symbol = (_selectedStockCode != null && _selectedStockCode!.isNotEmpty)
+        ? _selectedStockCode!
+        : stockName;
 
     final entryPrice = double.tryParse(_entryPriceCtrl.text) ?? 0;
     final quantity = int.tryParse(_quantityCtrl.text) ?? 0;
 
     if (entryPrice <= 0 || quantity <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.error)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.error)));
       return;
     }
 
+    final market = _resolveMarket(symbol);
+
     try {
-      if (_isPositionOnly) {
+      if (_additionalExecutions.isNotEmpty) {
+        final firstExec = TradeExecution(
+          id: 'initial_${DateTime.now().microsecondsSinceEpoch}',
+          action: TradeExecutionAction.buy,
+          price: entryPrice,
+          quantity: quantity,
+          date: _entryDate,
+          memo: '1차 매수',
+        );
+        final allExecutions = [firstExec, ..._additionalExecutions];
+        final calc = TradeEntry.calculateExecutions(
+          executions: allExecutions,
+          direction: TradeDirection.buy,
+          fallbackEntryDate: _entryDate,
+          fallbackEntryPrice: entryPrice,
+          fallbackQuantity: quantity,
+        );
+
+        if (calc.isClosed) {
+          await context.read<TradeProvider>().addTrade(
+            stockSymbol: symbol,
+            stockName: stockName,
+            market: market,
+            type: TradeType.real,
+            direction: TradeDirection.buy,
+            entryPrice: calc.averageEntryPrice,
+            exitPrice: calc.averageExitPrice ?? entryPrice,
+            quantity: calc.totalBuyQuantity,
+            entryDate: calc.entryDate,
+            exitDate: calc.exitDate ?? _exitDate,
+            reason: _reasonCtrl.text,
+            strategy: _strategyCtrl.text,
+            lesson: _strategyCtrl.text,
+            accountTag: _selectedAccountTag,
+            executions: allExecutions,
+          );
+        } else {
+          await context.read<TradeProvider>().addPosition(
+            stockSymbol: symbol,
+            stockName: stockName,
+            market: market,
+            type: TradeType.real,
+            direction: TradeDirection.buy,
+            entryPrice: calc.averageEntryPrice,
+            quantity: calc.totalBuyQuantity,
+            entryDate: calc.entryDate,
+            reason: _reasonCtrl.text,
+            strategy: _strategyCtrl.text,
+            lesson: _strategyCtrl.text,
+            accountTag: _selectedAccountTag,
+            executions: allExecutions,
+          );
+        }
+      } else if (_isPositionOnly) {
         await context.read<TradeProvider>().addPosition(
-          stockSymbol: _selectedStock!.symbol,
-          stockName: _selectedStock!.nameKr ?? _selectedStock!.name,
-          market: _selectedStock!.market,
+          stockSymbol: symbol,
+          stockName: stockName,
+          market: market,
           type: TradeType.real,
           direction: TradeDirection.buy,
           entryPrice: entryPrice,
@@ -420,19 +1131,21 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
           entryDate: _entryDate,
           reason: _reasonCtrl.text,
           strategy: _strategyCtrl.text,
+          lesson: _strategyCtrl.text,
+          accountTag: _selectedAccountTag,
         );
       } else {
         final exitPrice = double.tryParse(_exitPriceCtrl.text) ?? 0;
         if (exitPrice <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.error)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.error)));
           return;
         }
         await context.read<TradeProvider>().addTrade(
-          stockSymbol: _selectedStock!.symbol,
-          stockName: _selectedStock!.nameKr ?? _selectedStock!.name,
-          market: _selectedStock!.market,
+          stockSymbol: symbol,
+          stockName: stockName,
+          market: market,
           type: TradeType.real,
           direction: TradeDirection.buy,
           entryPrice: entryPrice,
@@ -442,13 +1155,12 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
           exitDate: _exitDate,
           reason: _reasonCtrl.text,
           strategy: _strategyCtrl.text,
+          lesson: _strategyCtrl.text,
+          accountTag: _selectedAccountTag,
         );
       }
 
       if (!mounted) return;
-      // Persisted cleanly — only NOW do we leave the form and show success.
-      // M2: capture the messenger BEFORE pop so the post-pop SnackBar
-      // doesn't traverse a deactivated ancestor.
       final messenger = ScaffoldMessenger.of(context);
       Navigator.of(context).pop();
       AdService.instance.onEntrySaved();
@@ -459,7 +1171,7 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
       debugPrint('add_trade_screen _submitTrade failed: $e\n$st');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('저장에 실패했습니다. 잠시 후 다시 시도해주세요.'),
           backgroundColor: AppColors.red,
         ),
@@ -468,597 +1180,9 @@ class _AddTradeScreenState extends State<AddTradeScreen> {
   }
 }
 
-/// Modal stock picker shown from [_AddTradeScreenState._showStockPicker].
-/// Owns its TextEditingController + in-flight search request so both are
-/// disposed / cancelled cleanly even when the user dismisses the sheet via
-/// scrim (the previous `StatefulBuilder` pattern leaked the controller on
-/// every dismissal — H12).
-///
-/// Searches are routed to Finnhub's `/search` endpoint via
-/// [StockApiService.searchStocksRemote], so the ticker list is never
-/// hardcoded — adding the next market or removing a delisted symbol requires
-/// no code change.
-class _StockPickerSheet extends StatefulWidget {
-  final Color textColor;
-  final Color subColor;
-  final Color bgColor;
-  final void Function(Stock) onSelected;
-  const _StockPickerSheet({
-    required this.textColor,
-    required this.subColor,
-    required this.bgColor,
-    required this.onSelected,
-  });
-
-  @override
-  State<_StockPickerSheet> createState() => _StockPickerSheetState();
-}
-
-class _StockPickerSheetState extends State<_StockPickerSheet> {
-  final TextEditingController _searchCtrl = TextEditingController();
-
-  /// Committed search query — only updated when the user explicitly confirms
-  /// (presses the on-screen search button or the keyboard's search/enter
-  /// action). Keeps the result list empty until the user has typed and
-  /// confirmed something, instead of dumping a network request as soon as
-  /// the sheet opens.
-  String _committedQuery = '';
-
-  /// Last fetched results for [_committedQuery]. `null` means we haven't
-  /// hit the API for that query yet (initial state, or a fresh commit).
-  List<Stock>? _results;
-
-  bool _isSearching = false;
-
-  /// User-facing error message for the most recent failed search. Cleared
-  /// when a new search begins. Null means no error currently shown.
-  String? _searchError;
-
-  /// In-flight request token. Incremented on every commit; responses check
-  /// the token and bail if the user has started a newer search in the
-  /// meantime — prevents out-of-order writes when the API is slow.
-  int _requestSeq = 0;
-
-  /// Per-query result cache so flipping between two recent queries
-  /// (e.g. "올릭스" then back to "삼성") doesn't re-hit the network.
-  final Map<String, List<Stock>> _searchCache = {};
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    // Bump the token so any pending HTTP response becomes a no-op.
-    _requestSeq++;
-    super.dispose();
-  }
-
-  Future<void> _commitSearch() async {
-    final query = _searchCtrl.text.trim();
-
-    // Empty commit = clear the view back to its initial prompt state.
-    if (query.isEmpty) {
-      setState(() {
-        _committedQuery = '';
-        _results = null;
-        _searchError = null;
-        _isSearching = false;
-      });
-      return;
-    }
-
-    // Cache hit: render synchronously without a network round trip.
-    final cached = _searchCache[query];
-    if (cached != null) {
-      setState(() {
-        _committedQuery = query;
-        _results = cached;
-        _searchError = null;
-        _isSearching = false;
-      });
-      return;
-    }
-
-    final mySeq = ++_requestSeq;
-    setState(() {
-      _committedQuery = query;
-      _isSearching = true;
-      _searchError = null;
-    });
-
-    try {
-      final fetched = await StockApiService.searchStocksRemote(query);
-      // Drop the result if a newer search has started or the sheet was closed.
-      if (!mounted || mySeq != _requestSeq) return;
-      _searchCache[query] = fetched;
-      setState(() {
-        _isSearching = false;
-        _results = fetched;
-        if (fetched.isEmpty) {
-          _searchError = StockApiService.getLastError();
-        }
-      });
-    } catch (e) {
-      if (!mounted || mySeq != _requestSeq) return;
-      setState(() {
-        _isSearching = false;
-        _searchError = '검색에 실패했습니다. 잠시 후 다시 시도해주세요.';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final sheetCardColor = widget.bgColor;
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      // Wrap with Material so the ListTile's ink splashes can paint on a
-      // proper Material ancestor. Previously the builder returned
-      // `Container(color: ...)` which is a ColoredBox — the ListTile's
-      // background / ripple was being painted UNDER that box and invisibly.
-      builder: (_, scrollCtrl) => Material(
-        color: sheetCardColor,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: widget.subColor.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _searchCtrl,
-                // Don't fire a network request on every keystroke — the
-                // results stay empty until the user explicitly confirms
-                // (Enter / search button). Keeps us well under the
-                // Finnhub free-tier rate limit.
-                onChanged: (_) => setState(() {}),
-                onSubmitted: (_) => _commitSearch(),
-                textInputAction: TextInputAction.search,
-                style: TextStyle(color: widget.textColor),
-                decoration: InputDecoration(
-                  hintText: l10n.searchPlaceholder,
-                  hintStyle: TextStyle(color: widget.subColor),
-                  prefixIcon: Icon(Icons.search, color: widget.subColor),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.arrow_forward_rounded,
-                        color: widget.subColor),
-                    onPressed: _commitSearch,
-                    tooltip: l10n.search,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(child: _buildBody(l10n, scrollCtrl)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Body state machine:
-  ///   1. Loading        → spinner
-  ///   2. Error          → message + retry button
-  ///   3. No query yet   → "type to search" placeholder
-  ///   4. No results     → "no matches" placeholder (with the API's hint if any)
-  ///   5. Results        → scrollable list
-  void _selectManualStock(String query, MarketType market) {
-    final cleanQuery = query.trim();
-    if (cleanQuery.isEmpty) return;
-    
-    final manualStock = Stock(
-      symbol: cleanQuery.toUpperCase(), // 티커는 통상 대문자
-      name: cleanQuery,
-      nameKr: cleanQuery,
-      market: market,
-      currentPrice: 0,
-      changePrice: 0,
-      changePercent: 0,
-      openPrice: 0,
-      highPrice: 0,
-      lowPrice: 0,
-      prevClose: 0,
-      volume: 0,
-    );
-    widget.onSelected(manualStock);
-  }
-
-  Widget _buildManualAddOptions(String query) {
-    final q = query.trim();
-    if (q.isEmpty) return const SizedBox();
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          '찾으시는 종목이 목록에 없나요?',
-          style: TextStyle(
-            color: widget.textColor.withValues(alpha: 0.6),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.center,
-          children: [
-            _buildManualChip(q, MarketType.kospi, 'KOSPI 수동 등록'),
-            _buildManualChip(q, MarketType.kosdaq, 'KOSDAQ 수동 등록'),
-            _buildManualChip(q, MarketType.nasdaq, 'NASDAQ 수동 등록'),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildManualChip(String query, MarketType market, String label) {
-    return ActionChip(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      backgroundColor: AppColors.purpleSubtle,
-      side: BorderSide(color: AppColors.purple.withValues(alpha: 0.3)),
-      label: Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.purple,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      onPressed: () => _selectManualStock(query, market),
-    );
-  }
-
-  Widget _buildBody(AppLocalizations l10n, ScrollController scrollCtrl) {
-    if (_isSearching) {
-      return Center(
-        key: const ValueKey('searching'),
-        child: CircularProgressIndicator(
-          color: AppColors.purple,
-          strokeWidth: 2.5,
-        ),
-      );
-    }
-
-    if (_searchError != null) {
-      // Same overflow fix as _buildEmptyPlaceholder — see the comment there.
-      // Center → Padding → Column overflows in landscape-tablet dialogs when
-      // the body has limited vertical space.
-      return LayoutBuilder(
-        key: const ValueKey('error'),
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.hasBoundedHeight
-                    ? constraints.maxHeight
-                    : 0,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline_rounded, size: 40, color: widget.subColor),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      _searchError!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: widget.subColor, fontSize: 13, height: 1.4),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    TextButton.icon(
-                      onPressed: _commitSearch,
-                      icon: const Icon(Icons.refresh_rounded, size: 16),
-                      label: Text(l10n.search),
-                      style: TextButton.styleFrom(foregroundColor: AppColors.purple),
-                    ),
-                    _buildManualAddOptions(_searchCtrl.text),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    final hasQuery = _committedQuery.isNotEmpty;
-    if (!hasQuery) {
-      return _buildEmptyPlaceholder(
-        key: const ValueKey('idle'),
-        icon: Icons.search_rounded,
-        message: l10n.searchPlaceholder,
-        subColor: widget.subColor,
-      );
-    }
-
-    final results = _results ?? const <Stock>[];
-    if (results.isEmpty) {
-      return _buildEmptyPlaceholder(
-        key: const ValueKey('empty'),
-        icon: Icons.search_off_rounded,
-        message: l10n.noResults,
-        subColor: widget.subColor,
-        extraChild: _buildManualAddOptions(_committedQuery),
-      );
-    }
-
-    return ListView.builder(
-      key: const ValueKey('results'),
-      controller: scrollCtrl,
-      itemCount: results.length + 1,
-      itemBuilder: (_, i) {
-        if (i == results.length) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            child: _buildManualAddOptions(_committedQuery),
-          );
-        }
-        final s = results[i];
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: AppColors.purpleSubtle,
-            radius: 16,
-            child: Text(
-              s.symbol.isEmpty ? '?' : s.symbol.substring(0, 1),
-              style: const TextStyle(
-                color: AppColors.purple,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          title: Text(
-            s.nameKr ?? s.name,
-            style: TextStyle(color: widget.textColor, fontSize: 14),
-          ),
-          subtitle: Text(
-            '${s.symbol} · ${s.market.name.toUpperCase()}',
-            style: TextStyle(fontSize: 12, color: widget.subColor),
-          ),
-          // Trailing price column — surfaces the quote Naver returned
-          // alongside the listing so the user can confirm price level
-          // before selecting. Green for up, red for down, neutral when
-          // Naver gave us 0 (e.g. halted / pre-market).
-          trailing: _buildPriceTrailing(s),
-          onTap: () => widget.onSelected(s),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyPlaceholder({
-    required Key key,
-    required IconData icon,
-    required String message,
-    required Color subColor,
-    Widget? extraChild,
-  }) {
-    // Previously a plain `Center` — overflowed in landscape-tablet dialogs
-    // because the body sits inside an `Expanded` whose height is squeezed
-    // (drag handle + search field eat the rest). The fixed-height Center
-    // forces its child to fit, which the column cannot when the dialog
-    // is short. The LayoutBuilder + ConstrainedBox pair here keeps the
-    // old visual (vertically centered when the content fits) but lets the
-    // SingleChildScrollView absorb any overflow instead of throwing a
-    // RenderFlex overflow assertion.
-    return LayoutBuilder(
-      key: key,
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: constraints.hasBoundedHeight
-                  ? constraints.maxHeight
-                  : 0,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xl),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 48, color: subColor),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: subColor,
-                      fontSize: 14,
-                      height: 1.4,
-                    ),
-                  ),
-                  extraChild ?? const SizedBox.shrink(),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Right-side price column shown in each result tile. Renders the current
-  /// quote (Naver for KOSPI/KOSDAQ, NASDAQ screener for NASDAQ) plus a
-  /// colored change-% chip below. If the quote is 0 (halted stock,
-  /// pre-market, Naver/NASDAQ returned nothing), we collapse to just the
-  /// placeholder so the row doesn't look broken.
-  ///
-  /// Currency + decimal precision follow the row's market:
-  ///   - KOSPI/KOSDAQ: ₩ + no decimals (`₩309,500`)
-  ///   - NASDAQ:        $ + 2 decimals  (`$194.83`)
-  /// Change % uses the same +X.XX%/-X.XX% format regardless of currency.
-  Widget _buildPriceTrailing(Stock s) {
-    if (s.currentPrice <= 0) {
-      return Text(
-        '—',
-        style: TextStyle(
-          color: widget.subColor,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      );
-    }
-    final isKorean = s.market == MarketType.kospi ||
-        s.market == MarketType.kosdaq;
-    final currencySymbol = isKorean ? '₩' : r'$';
-    // KRW is integer-denominated (`#309,500`); USD keeps cents (`$194.83`).
-    final priceFmt = NumberFormat(isKorean ? '#,###' : '#,##0.00');
-    final pctFmt = NumberFormat('+#,##0.00;-#,##0.00');
-
-    final isUp = s.changePrice >= 0;
-    final changeColor = s.changePrice == 0
-        ? widget.subColor
-        : (isUp ? Colors.green : Colors.red);
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          '$currencySymbol${priceFmt.format(s.currentPrice)}',
-          style: TextStyle(
-            color: widget.textColor,
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          '${pctFmt.format(s.changePercent)}%',
-          style: TextStyle(
-            color: changeColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // PREMIUM SECTION WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _HeroHeader extends StatelessWidget {
-  final Color subColor;
-  const _HeroHeader({required this.subColor});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.xl,
-        vertical: context.isMediumOrUp ? AppSpacing.xl : AppSpacing.lg,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  AppColors.purpleSubtle,
-                  AppColors.darkSurface.withValues(alpha: 0.6),
-                ]
-              : [
-                  AppColors.purpleSubtle.withValues(alpha: 0.05),
-                  AppColors.white,
-                ],
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: isDark
-              ? AppColors.purpleLight.withValues(alpha: 0.15)
-              : AppColors.purpleLight.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: isDark
-            ? [
-                BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.03),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                )
-              ]
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                )
-              ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.purpleLight, AppColors.purple],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.purple.withValues(alpha: 0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                )
-              ],
-            ),
-            child: const Icon(
-              Icons.insights_rounded,
-              size: 20,
-              color: AppColors.white,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '새로운 매매 기록',
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.lightText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '원칙을 지키는 투자의 시작',
-                  style: TextStyle(
-                    color: subColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _NumberedSectionHeader extends StatelessWidget {
   final String index;
@@ -1072,9 +1196,6 @@ class _NumberedSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = isDark ? AppColors.purpleLight : AppColors.purple;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
@@ -1083,7 +1204,7 @@ class _NumberedSectionHeader extends StatelessWidget {
           Text(
             index,
             style: TextStyle(
-              color: primaryColor,
+              color: AppColors.accent,
               fontWeight: FontWeight.w900,
               fontSize: 16,
               letterSpacing: -0.5,
@@ -1092,252 +1213,13 @@ class _NumberedSectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.text,
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PremiumStockSelector extends StatelessWidget {
-  final Stock? stock;
-  final VoidCallback onTap;
-  final bool isDark;
-  final Color textColor;
-  final Color subColor;
-  final Color cardColor;
-  const _PremiumStockSelector({
-    required this.stock,
-    required this.onTap,
-    required this.isDark,
-    required this.textColor,
-    required this.subColor,
-    required this.cardColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = stock != null;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: selected
-                  ? AppColors.purpleLight.withValues(alpha: 0.35)
-                  : (isDark
-                      ? AppColors.white.withValues(alpha: 0.08)
-                      : AppColors.lightBorder),
-              width: selected ? 1.5 : 1,
-            ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: AppColors.purple.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  ]
-                : [],
-          ),
-          child: selected
-              ? Row(
-                  children: [
-                    _GradientAvatar(
-                      text: stock!.symbol.substring(0, 1),
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            stock!.nameKr ?? stock!.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${stock!.symbol} · ${stock!.market.name.toUpperCase()}',
-                            style: TextStyle(
-                              color: subColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          formatTradeMoney(stock!.currentPrice, stock!.market),
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: (stock!.isPositive ? AppColors.green : AppColors.red)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                stock!.isPositive
-                                    ? Icons.trending_up
-                                    : Icons.trending_down,
-                                size: 10,
-                                color: stock!.isPositive
-                                    ? AppColors.green
-                                    : AppColors.red,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${stock!.changePercent >= 0 ? '+' : ''}${stock!.changePercent.toStringAsFixed(2)}%',
-                                style: TextStyle(
-                                  color: stock!.isPositive
-                                      ? AppColors.green
-                                      : AppColors.red,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.purpleLight.withValues(alpha: 0.15),
-                            AppColors.purple.withValues(alpha: 0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.search_rounded,
-                        color: AppColors.purpleLight,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '종목을 선택하세요',
-                            style: TextStyle(
-                              color: textColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '탭하여 검색 · KOSPI / KOSDAQ / NASDAQ',
-                            style: TextStyle(
-                              color: subColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GradientAvatar extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  const _GradientAvatar({required this.text, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.purpleLight.withValues(alpha: 0.25),
-            AppColors.purple.withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AppColors.purpleLight.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: AppColors.purpleLight,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-          ),
-        ),
       ),
     );
   }
@@ -1363,19 +1245,13 @@ class _SegmentedTradeMode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 52,
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightBg,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: isDark
-              ? AppColors.white.withValues(alpha: 0.06)
-              : AppColors.lightBorder,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
       child: Row(
         children: [
@@ -1423,9 +1299,6 @@ class _SegmentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? AppColors.purpleLight : AppColors.purple;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1434,23 +1307,21 @@ class _SegmentItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           decoration: BoxDecoration(
-            color: active
-                ? (isDark ? AppColors.darkCard : Colors.white)
-                : Colors.transparent,
+            color: active ? cardColor : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: active
                 ? Border.all(
-                    color: activeColor.withValues(alpha: 0.15),
+                    color: AppColors.accent.withValues(alpha: 0.15),
                     width: 1,
                   )
                 : null,
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 6,
                       offset: const Offset(0, 3),
-                    )
+                    ),
                   ]
                 : [],
           ),
@@ -1461,13 +1332,17 @@ class _SegmentItem extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: active ? activeColor : subColor.withValues(alpha: 0.8),
+                  color: active
+                      ? AppColors.accent
+                      : subColor.withValues(alpha: 0.8),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
                   style: TextStyle(
-                    color: active ? activeColor : subColor.withValues(alpha: 0.8),
+                    color: active
+                        ? AppColors.accent
+                        : subColor.withValues(alpha: 0.8),
                     fontSize: 13,
                     fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -1486,7 +1361,6 @@ class _PremiumInputField extends StatefulWidget {
   final String label;
   final String? prefix;
   final IconData icon;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final Color fillColor;
@@ -1495,7 +1369,6 @@ class _PremiumInputField extends StatefulWidget {
     required this.controller,
     required this.label,
     required this.icon,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.fillColor,
@@ -1534,10 +1407,10 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
         boxShadow: focused
             ? [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  color: AppColors.accentSubtle,
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ]
             : [],
       ),
@@ -1555,7 +1428,7 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: focused ? AppColors.purpleLight : widget.subColor,
+            color: focused ? AppColors.accent : widget.subColor,
             fontSize: 13,
             fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -1565,13 +1438,13 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
             height: 32,
             decoration: BoxDecoration(
               color: focused
-                  ? AppColors.purpleLight.withValues(alpha: 0.1)
+                  ? AppColors.accentSubtle
                   : widget.fillColor.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               widget.icon,
-              color: focused ? AppColors.purpleLight : widget.subColor,
+              color: focused ? AppColors.accent : widget.subColor,
               size: 16,
             ),
           ),
@@ -1589,28 +1462,15 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: BorderSide(
-              color: widget.isDark
-                  ? AppColors.white.withValues(alpha: 0.15)
-                  : AppColors.purple.withValues(alpha: 0.12),
-              width: 1.2,
-            ),
+            borderSide: BorderSide(color: AppColors.border, width: 1.2),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: BorderSide(
-              color: widget.isDark
-                  ? AppColors.white.withValues(alpha: 0.12)
-                  : AppColors.purple.withValues(alpha: 0.12),
-              width: 1.2,
-            ),
+            borderSide: BorderSide(color: AppColors.border, width: 1.2),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: const BorderSide(
-              color: AppColors.purpleLight,
-              width: 1.5,
-            ),
+            borderSide:  BorderSide(color: AppColors.accent, width: 1.5),
           ),
         ),
         validator: widget.validator,
@@ -1622,7 +1482,6 @@ class _PremiumInputFieldState extends State<_PremiumInputField> {
 class _QuantityStepper extends StatefulWidget {
   final TextEditingController controller;
   final String label;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final Color fillColor;
@@ -1630,7 +1489,6 @@ class _QuantityStepper extends StatefulWidget {
   const _QuantityStepper({
     required this.controller,
     required this.label,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.fillColor,
@@ -1668,10 +1526,10 @@ class _QuantityStepperState extends State<_QuantityStepper> {
         boxShadow: focused
             ? [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  color: AppColors.accentSubtle,
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ]
             : [],
       ),
@@ -1689,7 +1547,7 @@ class _QuantityStepperState extends State<_QuantityStepper> {
         decoration: InputDecoration(
           labelText: widget.label,
           labelStyle: TextStyle(
-            color: focused ? AppColors.purpleLight : widget.subColor,
+            color: focused ? AppColors.accent : widget.subColor,
             fontSize: 13,
             fontWeight: focused ? FontWeight.w700 : FontWeight.w500,
           ),
@@ -1699,13 +1557,13 @@ class _QuantityStepperState extends State<_QuantityStepper> {
             height: 32,
             decoration: BoxDecoration(
               color: focused
-                  ? AppColors.purpleLight.withValues(alpha: 0.1)
+                  ? AppColors.accentSubtle
                   : widget.fillColor.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.tag_rounded,
-              color: focused ? AppColors.purpleLight : widget.subColor,
+              color: focused ? AppColors.accent : widget.subColor,
               size: 16,
             ),
           ),
@@ -1717,28 +1575,15 @@ class _QuantityStepperState extends State<_QuantityStepper> {
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: BorderSide(
-              color: widget.isDark
-                  ? AppColors.white.withValues(alpha: 0.15)
-                  : AppColors.purple.withValues(alpha: 0.12),
-              width: 1.2,
-            ),
+            borderSide: BorderSide(color: AppColors.border, width: 1.2),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: BorderSide(
-              color: widget.isDark
-                  ? AppColors.white.withValues(alpha: 0.12)
-                  : AppColors.purple.withValues(alpha: 0.12),
-              width: 1.2,
-            ),
+            borderSide: BorderSide(color: AppColors.border, width: 1.2),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            borderSide: const BorderSide(
-              color: AppColors.purpleLight,
-              width: 1.5,
-            ),
+            borderSide:  BorderSide(color: AppColors.accent, width: 1.5),
           ),
         ),
         validator: widget.validator,
@@ -1752,7 +1597,6 @@ class _OrderSummaryCard extends StatelessWidget {
   final TextEditingController exitPriceCtrl;
   final TextEditingController quantityCtrl;
   final bool showPnl;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final MarketType? market;
@@ -1761,7 +1605,6 @@ class _OrderSummaryCard extends StatelessWidget {
     required this.exitPriceCtrl,
     required this.quantityCtrl,
     required this.showPnl,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.market,
@@ -1772,172 +1615,161 @@ class _OrderSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<TextEditingValue>(
-      valueListenable: entryPriceCtrl,
-      builder: (context, entryPrice, _) {
-        return ValueListenableBuilder<TextEditingValue>(
-          valueListenable: quantityCtrl,
-          builder: (context, quantity, _) {
-            return ValueListenableBuilder<TextEditingValue>(
-              valueListenable: exitPriceCtrl,
-              builder: (context, exitPrice, _) {
-                final ep = _read(entryPriceCtrl);
-                final qty = _readInt(quantityCtrl);
-                final total = ep * qty;
-                final hasValue = ep > 0 && qty > 0;
+    // Single builder that subscribes to all three TextEditingControllers at
+    // once via Listenable.merge, instead of three nested ValueListenableBuilder
+    // blocks (which previously caused three text-style recomputations per
+    // keystroke). The `AnimatedContainer` wrapper around the entire card
+    // remains so the border/glow still animates when P&L switches sign.
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        entryPriceCtrl,
+        quantityCtrl,
+        exitPriceCtrl,
+      ]),
+      builder: (context, _) {
+        final ep = _read(entryPriceCtrl);
+        final qty = _readInt(quantityCtrl);
+        final xp = _read(exitPriceCtrl);
+        final total = ep * qty;
+        final hasValue = ep > 0 && qty > 0;
+        final pnl = showPnl ? (xp - ep) * qty : 0.0;
+        final pnlPct = (showPnl && ep > 0 && qty > 0)
+            ? ((xp - ep) / ep) * 100.0
+            : 0.0;
 
-                final xp = _read(exitPriceCtrl);
-                final pnl = showPnl ? (xp - ep) * qty : 0.0;
-                final pnlPct = (showPnl && ep > 0 && qty > 0)
-                    ? ((xp - ep) / ep) * 100.0
-                    : 0.0;
-                
-                final isProfit = pnl >= 0;
-                final pnlColor = isProfit ? AppColors.green : AppColors.red;
-                final glowColor = isProfit 
-                    ? AppColors.green.withValues(alpha: 0.08)
-                    : AppColors.red.withValues(alpha: 0.08);
+        final isProfit = pnl >= 0;
+        final pnlColor = isProfit ? AppColors.green : AppColors.red;
+        final glowColor = isProfit
+            ? AppColors.green.withValues(alpha: 0.08)
+            : AppColors.red.withValues(alpha: 0.08);
 
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.xl),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkCard : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(
-                      color: showPnl && hasValue && xp > 0
-                          ? pnlColor.withValues(alpha: 0.25)
-                          : (isDark
-                              ? AppColors.white.withValues(alpha: 0.06)
-                              : AppColors.lightBorder),
-                      width: showPnl && hasValue && xp > 0 ? 1.5 : 1,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: showPnl && hasValue && xp > 0
+                  ? pnlColor.withValues(alpha: 0.25)
+                  : AppColors.border,
+              width: showPnl && hasValue && xp > 0 ? 1.5 : 1,
+            ),
+            boxShadow: showPnl && hasValue && xp > 0
+                ? [
+                    BoxShadow(
+                      color: glowColor,
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
-                    boxShadow: showPnl && hasValue && xp > 0
-                        ? [
-                            BoxShadow(
-                              color: glowColor,
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            )
-                          ]
-                        : [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            )
-                          ],
+                  ]
+                : AppColors.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '총 매수금액',
+                    style: TextStyle(
+                      color: subColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  if (hasValue)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSubtle,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '$qty주',
+                        style:  TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                hasValue
+                    ? formatTradeMoney(total, market)
+                    : formatTradeMoney(0, market),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              if (showPnl && hasValue && xp > 0) ...[
+                const SizedBox(height: AppSpacing.lg),
+                Container(height: 1, color: AppColors.border),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '예상 손익',
+                      style: TextStyle(
+                        color: subColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: pnlColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
                         children: [
                           Text(
-                            '총 투자금',
+                            '${pnl >= 0 ? '+' : ''}${formatTradeMoney(pnl, market)}',
                             style: TextStyle(
-                              color: subColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.2,
+                              color: pnlColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
-                          if (hasValue)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.purpleLight.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                '$qty주',
-                                style: const TextStyle(
-                                  color: AppColors.purpleLight,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '(${pnlPct >= 0 ? '+' : ''}${pnlPct.toStringAsFixed(1)}%)',
+                            style: TextStyle(
+                              color: pnlColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
                             ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        hasValue
-                            ? formatTradeMoney(total, market)
-                            : formatTradeMoney(0, market),
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.4,
-                          fontFeatures: const [
-                            FontFeature.tabularFigures(),
-                          ],
-                        ),
-                      ),
-                      if (showPnl && hasValue && xp > 0) ...[
-                        const SizedBox(height: AppSpacing.lg),
-                        Container(
-                          height: 1,
-                          color: isDark
-                              ? AppColors.white.withValues(alpha: 0.06)
-                              : AppColors.lightBorder,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '예상 손익',
-                              style: TextStyle(
-                                color: subColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.2,
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: pnlColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    '${pnl >= 0 ? '+' : ''}${formatTradeMoney(pnl, market)}',
-                                    style: TextStyle(
-                                      color: pnlColor,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w900,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '(${pnlPct >= 0 ? '+' : ''}${pnlPct.toStringAsFixed(1)}%)',
-                                    style: TextStyle(
-                                      color: pnlColor,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         );
       },
     );
@@ -1952,11 +1784,9 @@ class _DatePickerRow extends StatelessWidget {
   final String exitLabel;
   final ValueChanged<DateTime> onPickEntry;
   final ValueChanged<DateTime> onPickExit;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final Color cardColor;
-  final AppLocalizations l10n;
   const _DatePickerRow({
     required this.entryDate,
     required this.exitDate,
@@ -1965,15 +1795,16 @@ class _DatePickerRow extends StatelessWidget {
     required this.exitLabel,
     required this.onPickEntry,
     required this.onPickExit,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.cardColor,
-    required this.l10n,
   });
 
-  Future<void> _pick(BuildContext context, DateTime current, ValueChanged<DateTime> onPicked) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Future<void> _pick(
+    BuildContext context,
+    DateTime current,
+    ValueChanged<DateTime> onPicked,
+  ) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: current,
@@ -1981,19 +1812,12 @@ class _DatePickerRow extends StatelessWidget {
       lastDate: DateTime.now(),
       builder: (_, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: isDark
-              ? const ColorScheme.dark(
-                  primary: AppColors.purpleLight,
-                  onPrimary: Colors.white,
-                  surface: AppColors.darkCard,
-                  onSurface: Colors.white,
-                )
-              : const ColorScheme.light(
-                  primary: AppColors.purple,
-                  onPrimary: Colors.white,
-                  surface: Colors.white,
-                  onSurface: AppColors.lightText,
-                ),
+          colorScheme:  ColorScheme.light(
+            primary: AppColors.accent,
+            onPrimary: Colors.white,
+            surface: AppColors.card,
+            onSurface: AppColors.text,
+          ),
         ),
         child: child!,
       ),
@@ -2007,7 +1831,6 @@ class _DatePickerRow extends StatelessWidget {
       label: entryLabel,
       date: entryDate,
       onTap: () => _pick(context, entryDate, onPickEntry),
-      isDark: isDark,
       textColor: textColor,
       subColor: subColor,
       cardColor: cardColor,
@@ -2015,16 +1838,13 @@ class _DatePickerRow extends StatelessWidget {
     if (!showExit) return card;
     return Row(
       children: [
-        Expanded(
-          child: card,
-        ),
+        Expanded(child: card),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: _DateCard(
             label: exitLabel,
             date: exitDate,
             onTap: () => _pick(context, exitDate, onPickExit),
-            isDark: isDark,
             textColor: textColor,
             subColor: subColor,
             cardColor: cardColor,
@@ -2039,7 +1859,6 @@ class _DateCard extends StatelessWidget {
   final String label;
   final DateTime date;
   final VoidCallback onTap;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final Color cardColor;
@@ -2047,7 +1866,6 @@ class _DateCard extends StatelessWidget {
     required this.label,
     required this.date,
     required this.onTap,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.cardColor,
@@ -2065,12 +1883,7 @@ class _DateCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.white.withValues(alpha: 0.06)
-                  : AppColors.lightBorder,
-              width: 1,
-            ),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
           child: Row(
             children: [
@@ -2080,16 +1893,16 @@ class _DateCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.purpleLight.withValues(alpha: 0.15),
-                      AppColors.purple.withValues(alpha: 0.05),
+                      AppColors.accent.withValues(alpha: 0.12),
+                      AppColors.royalBlue.withValues(alpha: 0.06),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
+                child:  Icon(
                   Icons.calendar_today_rounded,
                   size: 16,
-                  color: isDark ? AppColors.purpleLight : AppColors.purple,
+                  color: AppColors.accent,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -2114,15 +1927,17 @@ class _DateCard extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
-                        fontFeatures: const [
-                          FontFeature.tabularFigures(),
-                        ],
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: subColor.withValues(alpha: 0.7), size: 18),
+              Icon(
+                Icons.chevron_right,
+                color: subColor.withValues(alpha: 0.7),
+                size: 18,
+              ),
             ],
           ),
         ),
@@ -2135,7 +1950,6 @@ class _NotesArea extends StatefulWidget {
   final TextEditingController controller;
   final IconData icon;
   final String hint;
-  final bool isDark;
   final Color textColor;
   final Color subColor;
   final Color cardColor;
@@ -2143,7 +1957,6 @@ class _NotesArea extends StatefulWidget {
     required this.controller,
     required this.icon,
     required this.hint,
-    required this.isDark,
     required this.textColor,
     required this.subColor,
     required this.cardColor,
@@ -2173,13 +1986,9 @@ class _NotesAreaState extends State<_NotesArea> {
   @override
   Widget build(BuildContext context) {
     final focused = _focus.hasFocus;
-    final activeColor = widget.isDark ? AppColors.purpleLight : AppColors.purple;
-    final unfocusedBorder = widget.isDark
-        ? AppColors.white.withValues(alpha: 0.08)
-        : AppColors.lightBorder;
     final borderColor = focused
-        ? activeColor.withValues(alpha: 0.6)
-        : unfocusedBorder;
+        ? AppColors.accent.withValues(alpha: 0.6)
+        : AppColors.border;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -2190,10 +1999,10 @@ class _NotesAreaState extends State<_NotesArea> {
         boxShadow: focused
             ? [
                 BoxShadow(
-                  color: AppColors.purple.withValues(alpha: widget.isDark ? 0.03 : 0.02),
+                  color: AppColors.accentSubtle,
                   blurRadius: 12,
                   offset: const Offset(0, 4),
-                )
+                ),
               ]
             : [],
       ),
@@ -2203,9 +2012,9 @@ class _NotesAreaState extends State<_NotesArea> {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
-              AppSpacing.md,
+              AppSpacing.lg,
               AppSpacing.xl,
-              AppSpacing.xs,
+              AppSpacing.sm,
             ),
             child: Row(
               children: [
@@ -2213,14 +2022,10 @@ class _NotesAreaState extends State<_NotesArea> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: AppColors.purpleSubtle,
+                    color: AppColors.accentSubtle,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    widget.icon,
-                    size: 14,
-                    color: widget.isDark ? AppColors.purpleLight : AppColors.purple,
-                  ),
+                  child: Icon(widget.icon, size: 14, color: AppColors.accent),
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 Text(
@@ -2238,31 +2043,32 @@ class _NotesAreaState extends State<_NotesArea> {
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.xl,
-              AppSpacing.xs,
+              0,
               AppSpacing.xl,
-              AppSpacing.lg,
+              AppSpacing.xl,
             ),
             child: TextFormField(
               controller: widget.controller,
               focusNode: _focus,
-              maxLines: 4,
+              minLines: 3,
+              maxLines: 6,
               style: TextStyle(
                 color: widget.textColor,
-                fontSize: 14,
-                height: 1.6,
+                fontSize: 14.5,
+                height: 1.65,
               ),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isCollapsed: true,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 10,
                 ),
                 hintText: '자유롭게 메모를 적어보세요...',
                 hintStyle: TextStyle(
                   color: widget.subColor.withValues(alpha: 0.6),
-                  fontSize: 13,
-                  height: 1.6,
+                  fontSize: 13.5,
+                  height: 1.65,
                 ),
               ),
             ),
@@ -2287,8 +2093,6 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return GestureDetector(
       onTapDown: (_) {
         if (mounted) setState(() => _pressed = true);
@@ -2308,18 +2112,15 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
             width: context.isMediumOrUp ? 320 : double.infinity,
             height: 54,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient:  LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  AppColors.purple,
-                  AppColors.purpleDark,
-                ],
+                colors: [AppColors.accent, AppColors.accentStrong],
               ),
               borderRadius: BorderRadius.circular(AppRadius.lg),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.purpleDark.withValues(alpha: isDark ? 0.4 : 0.2),
+                  color: AppColors.accentStrong.withValues(alpha: 0.25),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -2329,7 +2130,7 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                   Icon(
                     Icons.check_circle_outline_rounded,
                     color: AppColors.white,
                     size: 18,
@@ -2337,7 +2138,7 @@ class _PremiumCtaButtonState extends State<_PremiumCtaButton> {
                   const SizedBox(width: 8),
                   Text(
                     widget.label,
-                    style: const TextStyle(
+                    style:  TextStyle(
                       color: AppColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,

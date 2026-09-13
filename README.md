@@ -7,8 +7,8 @@ Flutter로 만든 크로스플랫폼 매매 일지 앱. 거래 내역을 기록�
 ## 특징
 
 - **로컬 우선**: 모든 매매 데이터는 기기에 저장 (Hive) — 서버 계정 불필요
-- **차트 시각화**: `fl_chart` 기반 일봉/캔들스틱
-- **알림 리마인더**: 매매 후 재확인/복습 알림 (`flutter_local_notifications`)
+- **매매 결과 시각화**: 진입→청산 가격 게이지, 손익/수익률, 누적·월별 손익 차트 (`fl_chart`)
+- **멀티 계좌 관리**: 증권사별 계좌 태그로 매매를 분류하고 통합/계좌별 집계 동시 지원
 - **광고**: AdMob 배너 + 5건당 전면 광고
 - **다국어**: 한국어 / 영어 (`flutter_localizations`)
 - **반응형**: 폰 / 태블릿 / 데스크탑 대응 (`NavigationBar` ↔ `NavigationRail`)
@@ -23,8 +23,7 @@ Flutter로 만든 크로스플랫폼 매매 일지 앱. 거래 내역을 기록�
 | 로컬 저장 | `hive`, `shared_preferences` |
 | 차트 | `fl_chart` 0.69 |
 | 광고 | `google_mobile_ads` |
-| 알림 | `flutter_local_notifications`, `timezone` |
-| 권한 | `permission_handler`, `app_tracking_transparency` |
+| 권한 | `app_tracking_transparency` |
 | HTTP | `http` |
 | 외부 URL | `url_launcher` (스토어 링크 / 약관 등) |
 | 앱 메타 | `package_info_plus` |
@@ -105,7 +104,7 @@ lib/
 ├── l10n/                      # .arb 다국어 리소스 + 생성된 AppLocalizations
 ├── models/                    # TradeEntry, FavoriteFolder, Stock
 ├── providers/                 # ChangeNotifier 기반 상태 관리
-├── services/                  # 비즈니스 로직 (api, ad, notification, update, storage)
+├── services/                  # 비즈니스 로직 (ad, update, storage, stock data, export)
 ├── screens/                   # 화면 단위 위젯 (홈/일지/복습/설정/강제업데이트)
 ├── theme/                     # 색상/타이포 위주 (Kraken 디자인 시스템 영감)
 ├── utils/                     # 반응형, 방향 잠금, 통화 포매팅 등
@@ -144,10 +143,10 @@ flutter test test/update_service_test.dart                # 한 파일만
 flutter test --coverage                                   # 커버리지 리포트 (coverage/lcov.info)
 ```
 
-현재 130+ 테스트:
+현재 190+ 테스트:
 
-- 서비스 로직: `update_service_test.dart`, `notification_service_test.dart`
-- 위젯: `update_widgets_test.dart`, `candlestick_chart_test.dart`, `trade_detail_chart_test.dart`
+- 서비스 로직: `update_service_test.dart`, `excel_export_service_test.dart`
+- 위젯: `update_widgets_test.dart`, `trade_visualizer_test.dart`
 - 통합: `trade_provider_integration_test.dart`, `trade_data_layer_test.dart`
 
 ## CI

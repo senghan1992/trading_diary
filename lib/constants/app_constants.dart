@@ -63,4 +63,16 @@ class AppConstants {
     'ANDROID_PACKAGE_NAME',
     defaultValue: 'com.senghan1992.tradingdiary',
   );
+
+  /// URL of the remote stocks list JSON for daily auto-update.
+  /// The shape is an array of objects:
+  /// [{"code":"005930","name":"삼성전자","market":"kospi"}, ...]
+  ///
+  /// Can be hosted on GitHub raw, Cloudflare, S3, or Firebase Hosting.
+  /// Pass at build time:
+  ///   --dart-define=STOCK_LIST_URL=https://yourdomain.com/stocks.json
+  static const String stockListUrl = String.fromEnvironment(
+    'STOCK_LIST_URL',
+    defaultValue: 'https://raw.githubusercontent.com/senghan1992/trading_diary/main/assets/data/stocks_default.json',
+  );
 }

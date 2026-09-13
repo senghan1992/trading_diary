@@ -5,62 +5,44 @@ import 'l10n/app_localizations.dart';
 import 'theme/app_theme.dart';
 import 'services/ad_service.dart';
 import 'services/local_storage_service.dart';
-import 'services/notification_service.dart';
 import 'services/update_service.dart';
-import 'providers/market_provider.dart';
+import 'services/stock_data_service.dart';
 import 'providers/trade_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/theme_provider.dart';
-import 'providers/notification_provider.dart';
 import 'screens/force_update_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/journal_screen.dart';
-import 'screens/review_screen.dart';
+import 'screens/analytics_screen.dart';
 import 'screens/settings_screen.dart';
 import 'utils/orientation_lock.dart';
 import 'utils/responsive.dart';
+import 'widgets/ad_banner.dart';
 import 'widgets/update_dialog.dart';
 
-/// Lightweight global router used by [NotificationService] when a delivered
-/// notification is tapped. The settings/build code wires the active shell
-/// into this; the notification tap fires the callback which the shell uses
-/// to switch to the Journal tab.
-class NotificationRouter {
-  NotificationRouter._();
-  static final ValueNotifier<String?> lastTappedReminderId =
-      ValueNotifier<String?>(null);
+/// Lightweight global router used to switch tabs programmatically
+/// (e.g. drilling into Journal from Home or Account screens).
+class MainTabRouter {
+  MainTabRouter._();
+  static final ValueNotifier<int?> switchToTab = ValueNotifier<int?>(null);
+
+  static void jumpToJournal() {
+    switchToTab.value = 1;
+  }
 }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LocalStorageService.init();
+  await StockDataService.instance.init();
   await AdService.instance.init();
-  await NotificationService.instance.init();
   // Lock orientation by form factor BEFORE the first frame. Phones stay
   // portrait; tablets get all four orientations. The OrientationLock
   // widget below keeps this in sync if the size class changes at runtime
   // (foldable unfolding, split-screen resize).
   await applyInitialOrientation();
 
-  // Re-sync the OS scheduler to the locally stored reminders. This is
-  // idempotent and covers cold reboot (Android clears scheduled alarms),
-  // app updates that may have dropped pending intents, and the first launch
-  // after install.
   final tradeProvider = TradeProvider();
-  // TradeProvider's constructor already loads reminders; calling
-  // loadReminders() again here was redundant.
-  if (tradeProvider.reminders.isNotEmpty) {
-    // Run async, don't block UI startup. Errors are swallowed; the toggle
-    // in settings is the user's recovery path.
-    // ignore: discarded_futures
-    tradeProvider.rescheduleAllReminders();
-  }
-
-  // Tapping a delivered notification pushes the reminder id here so the
-  // active shell can route to it.
-  NotificationService.instance.onNotificationTap = (reminder) {
-    NotificationRouter.lastTappedReminderId.value = reminder.id;
-  };
 
   runApp(TradingDiaryApp(tradeProvider: tradeProvider));
 }
@@ -131,8 +113,9 @@ class _AppGateState extends State<AppGate> {
       case _GateState.optional:
         return MainShell(
           optionalUpdateConfig: _config,
-          optionalUpdateLanguageCode:
-              Localizations.localeOf(context).languageCode,
+          optionalUpdateLanguageCode: Localizations.localeOf(
+            context,
+          ).languageCode,
         );
       case _GateState.upToDate:
         return const MainShell();
@@ -166,45 +149,74 @@ class _SplashLoading extends StatelessWidget {
   }
 }
 
-class TradingDiaryApp extends StatelessWidget {
+class TradingDiaryApp extends StatefulWidget {
   final TradeProvider tradeProvider;
   const TradingDiaryApp({super.key, required this.tradeProvider});
+
+  @override
+  State<TradingDiaryApp> createState() => _TradingDiaryAppState();
+}
+
+class _TradingDiaryAppState extends State<TradingDiaryApp> {
+  @override
+  void initState() {
+    super.initState();
+    // The iOS ATT prompt must only be requested AFTER the first frame is
+    // mounted; otherwise the system silently drops the request because no
+    // UI window is attached. AdService.init() already ran in main() so the
+    // SDK is ready - we only need the OS-level permission here. Fire-and-
+    // forget; the future resolves regardless of user choice.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ignore: discarded_futures
+      AdService.instance.requestTrackingPermission();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return OrientationLock(
       child: MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => LanguageProvider()),
-        ChangeNotifierProvider(create: (_) => MarketProvider()),
-        ChangeNotifierProvider.value(value: tradeProvider),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-      ],
-      child: Consumer2<ThemeProvider, LanguageProvider>(
-        builder: (context, themeProvider, languageProvider, _) {
-          return MaterialApp(
-            title: 'Trading Diary',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            locale: languageProvider.locale,
-            supportedLocales: const [
-              Locale('ko'),
-              Locale('en'),
-            ],
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            builder: (context, child) => SystemBarInsetGuard(child: child!),
-            home: const AppGate(),
-          );
-        },
-      ),
+        providers: [
+          ChangeNotifierProvider(create: (_) => ThemeProvider()),
+          ChangeNotifierProvider(create: (_) => LanguageProvider()),
+          ChangeNotifierProvider.value(value: widget.tradeProvider),
+        ],
+        child: Consumer<LanguageProvider>(
+          builder: (context, languageProvider, _) {
+            return Consumer<ThemeProvider>(
+              builder: (context, themeProvider, _) {
+                return MaterialApp(
+                  title: 'Trading Diary',
+                  debugShowCheckedModeBanner: false,
+                  // Dual-theme app: system / light / dark, resolved by
+                  // ThemeProvider and persisted across launches.
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeProvider.themeMode,
+                  themeAnimationDuration: Duration.zero,
+                  locale: languageProvider.locale,
+                  supportedLocales: const [Locale('ko'), Locale('en')],
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  builder: (context, child) {
+                    // Keep the AppColors facade in lockstep with the
+                    // resolved theme so every static AppColors.* read
+                    // returns light or dark values consistently. With
+                    // themeAnimationDuration: Duration.zero, the theme change
+                    // updates Theme.of(context).brightness on the immediate frame.
+                    AppColors.setBrightness(Theme.of(context).brightness);
+                    return SystemBarInsetGuard(child: child!);
+                  },
+                  home: const AppGate(),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -233,33 +245,26 @@ class _MainShellState extends State<MainShell> {
   final _screens = const [
     HomeScreen(),
     JournalScreen(),
-    ReviewScreen(),
+    AnalyticsScreen(),
     SettingsScreen(),
   ];
 
   @override
   void initState() {
     super.initState();
-    // If the app was cold-started by tapping a notification, jump to the
-    // Journal tab once the first frame is up.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final id = NotificationService.instance.consumeLaunchReminderId();
-      if (id != null) {
-        setState(() => _currentIndex = 1);
-        NotificationRouter.lastTappedReminderId.value = id;
-      }
       _maybeShowOptionalUpdateDialog();
     });
 
-    // Also handle taps that arrive while the app is in the background/foreground.
-    NotificationRouter.lastTappedReminderId.addListener(_onRouterChanged);
+    MainTabRouter.switchToTab.addListener(_onTabRouterChanged);
   }
 
   void _maybeShowOptionalUpdateDialog() {
     final config = widget.optionalUpdateConfig;
     if (config == null) return;
-    final lang = widget.optionalUpdateLanguageCode ??
+    final lang =
+        widget.optionalUpdateLanguageCode ??
         Localizations.localeOf(context).languageCode;
     final message = config.messageFor(lang);
     // ignore: discarded_futures
@@ -272,15 +277,16 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
-    NotificationRouter.lastTappedReminderId.removeListener(_onRouterChanged);
+    MainTabRouter.switchToTab.removeListener(_onTabRouterChanged);
     super.dispose();
   }
 
-  void _onRouterChanged() {
+  void _onTabRouterChanged() {
     if (!mounted) return;
-    if (NotificationRouter.lastTappedReminderId.value != null) {
-      setState(() => _currentIndex = 1);
-      NotificationRouter.lastTappedReminderId.value = null;
+    final targetTab = MainTabRouter.switchToTab.value;
+    if (targetTab != null) {
+      setState(() => _currentIndex = targetTab);
+      MainTabRouter.switchToTab.value = null;
     }
   }
 
@@ -304,9 +310,9 @@ class _MainShellState extends State<MainShell> {
         label: Text(l10n.journal),
       ),
       NavigationRailDestination(
-        icon: const Icon(Icons.auto_stories_outlined),
-        selectedIcon: const Icon(Icons.auto_stories),
-        label: Text(l10n.review),
+        icon: const Icon(Icons.analytics_outlined),
+        selectedIcon: const Icon(Icons.analytics),
+        label: Text(l10n.analytics),
       ),
       NavigationRailDestination(
         icon: const Icon(Icons.settings_outlined),
@@ -330,9 +336,9 @@ class _MainShellState extends State<MainShell> {
           label: l10n.journal,
         ),
         NavigationDestination(
-          icon: const Icon(Icons.auto_stories_outlined),
-          selectedIcon: const Icon(Icons.auto_stories),
-          label: l10n.review,
+          icon: const Icon(Icons.analytics_outlined),
+          selectedIcon: const Icon(Icons.analytics),
+          label: l10n.analytics,
         ),
         NavigationDestination(
           icon: const Icon(Icons.settings_outlined),
@@ -359,26 +365,61 @@ class _MainShellState extends State<MainShell> {
               minExtendedWidth: 220,
               destinations: destinations,
             ),
-          if (showRail)
-            const VerticalDivider(width: 1, thickness: 1),
-          Expanded(child: _screens[_currentIndex]),
+          if (showRail) const VerticalDivider(width: 1, thickness: 1),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(child: _screens[_currentIndex]),
+                // On tablet/desktop (no bottom bar) the ad anchors to the
+                // bottom of the content column instead of sitting above it.
+                if (!context.isCompact) const _AdFooter(showHairline: true),
+              ],
+            ),
+          ),
         ],
       ),
       // Phone-only NavigationBar. On tablet/desktop the NavigationRail
       // owns selection so the bottom slot is empty.
       bottomNavigationBar: context.isCompact
-          ? Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: navBar,
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Advertising lives at the quiet edge of the screen: a slim
+                // banner directly above the nav bar, never inside content.
+                const _AdFooter(showHairline: true),
+                navBar,
+              ],
             )
           : null,
+    );
+  }
+}
+
+/// A slim, quiet footer slot for the banner ad. Pinned to the very bottom
+/// of the screen (above the nav bar on phones, below the content column on
+/// tablet/rail layouts) so it never interrupts reading. Renders nothing
+/// until the ad loads, so there is no layout jump.
+class _AdFooter extends StatelessWidget {
+  const _AdFooter({required this.showHairline});
+
+  final bool showHairline;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: showHairline
+            ? Border(
+                top: BorderSide(color: theme.dividerColor, width: 0.5),
+              )
+            : null,
+      ),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 6),
+        child: Center(child: AdBanner()),
+      ),
     );
   }
 }
@@ -396,10 +437,7 @@ class SystemBarInsetGuard extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
-      child: SafeArea(
-        top: false,
-        child: child,
-      ),
+      child: SafeArea(top: false, child: child),
     );
   }
 }

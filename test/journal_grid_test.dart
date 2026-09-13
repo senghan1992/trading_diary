@@ -40,43 +40,45 @@ void main() {
       // already accounted for in the per-element measurements above. So the
       // mainAxisExtent must be >= content height (not content + padding).
       // We give a 20 dp buffer for longer stock names that wrap.
-      const double requiredMainAxisExtent =
-          minimumRequiredContentHeight + 20;
+      const double requiredMainAxisExtent = minimumRequiredContentHeight + 20;
       expect(
         mainAxisExtent,
         greaterThanOrEqualTo(requiredMainAxisExtent),
-        reason: 'mainAxisExtent=$mainAxisExtent must be ≥ '
+        reason:
+            'mainAxisExtent=$mainAxisExtent must be ≥ '
             '$requiredMainAxisExtent dp to fit the trade card content. '
             'A smaller value will re-introduce the iPad-landscape '
             'RenderFlex overflow.',
       );
     });
 
-    test('mainAxisExtent produces a sane cell aspect ratio on iPad landscape',
-        () {
-      // Simulate iPad landscape: 1024 dp wide, NavigationRail 80 dp wide,
-      // VerticalDivider 1 dp, ResponsiveContainer caps at 960 dp (expanded),
-      // GridView horizontal padding 16 dp on each side = 928 dp inner width.
-      const double iPadLandscapeInnerWidth = 1024 - 80 - 1 - 32 - 32;
-      // n columns: floor((innerWidth + spacing) / (maxExtent + spacing))
-      // We pick the largest n such that n*maxExtent + (n-1)*spacing ≤ innerWidth
-      const double spacing = AppSpacing.md; // 12
-      final double perCol = maxCrossAxisExtent + spacing;
-      final int columns = (iPadLandscapeInnerWidth / perCol).floor();
-      // Each column width = (innerWidth - (columns-1)*spacing) / columns,
-      // capped at maxCrossAxisExtent.
-      final double columnWidth =
-          ((iPadLandscapeInnerWidth - (columns - 1) * spacing) / columns)
-              .clamp(0, maxCrossAxisExtent);
+    test(
+      'mainAxisExtent produces a sane cell aspect ratio on iPad landscape',
+      () {
+        // Simulate iPad landscape: 1024 dp wide, NavigationRail 80 dp wide,
+        // VerticalDivider 1 dp, ResponsiveContainer caps at 960 dp (expanded),
+        // GridView horizontal padding 16 dp on each side = 928 dp inner width.
+        const double iPadLandscapeInnerWidth = 1024 - 80 - 1 - 32 - 32;
+        // n columns: floor((innerWidth + spacing) / (maxExtent + spacing))
+        // We pick the largest n such that n*maxExtent + (n-1)*spacing ≤ innerWidth
+        const double spacing = AppSpacing.md; // 12
+        final double perCol = maxCrossAxisExtent + spacing;
+        final int columns = (iPadLandscapeInnerWidth / perCol).floor();
+        // Each column width = (innerWidth - (columns-1)*spacing) / columns,
+        // capped at maxCrossAxisExtent.
+        final double columnWidth =
+            ((iPadLandscapeInnerWidth - (columns - 1) * spacing) / columns)
+                .clamp(0, maxCrossAxisExtent);
 
-      expect(columns, greaterThanOrEqualTo(2));
-      expect(columns, lessThanOrEqualTo(4));
-      // Cell aspect ratio width:height — should be wider than 1 (cell is
-      // landscape-shaped), but not absurdly so. If it gets near 1:1 the
-      // cards will look squat.
-      final double aspectRatio = columnWidth / mainAxisExtent;
-      expect(aspectRatio, greaterThan(1.4));
-      expect(aspectRatio, lessThan(2.5));
-    });
+        expect(columns, greaterThanOrEqualTo(2));
+        expect(columns, lessThanOrEqualTo(4));
+        // Cell aspect ratio width:height — should be wider than 1 (cell is
+        // landscape-shaped), but not absurdly so. If it gets near 1:1 the
+        // cards will look squat.
+        final double aspectRatio = columnWidth / mainAxisExtent;
+        expect(aspectRatio, greaterThan(1.4));
+        expect(aspectRatio, lessThan(2.5));
+      },
+    );
   });
 }
