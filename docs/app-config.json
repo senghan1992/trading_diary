@@ -1,9 +1,9 @@
 {
-  "latest_version": "1.0.1",
+  "latest_version": "1.0.2",
   "minimum_version": "1.0.0",
   "force_update": false,
   "update_message_ko": "매매 분석·멀티 계좌 관리·엑셀 내보내기 기능이 추가되었어요. 최신 버전으로 업데이트해보세요!",
   "update_message_en": "Trade analytics, multi-account management and Excel export are here. Update to the latest version!",
-  "store_url_ios": "",
+  "store_url_ios": "https://apps.apple.com/us/app/%EB%A7%A4%EB%A7%A4-%EC%9D%BC%EA%B8%B0/id6803799442",
   "store_url_android": "https://play.google.com/store/apps/details?id=com.senghan1992.tradingdiary"
 }
